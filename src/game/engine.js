@@ -94,6 +94,26 @@ export function canLeadWith(card, topCard, requiredSuit) {
   return canConnect(topCard, card)
 }
 
+// Returns the cards the UI should initially mark as playable suggestions.
+// This is deliberately an assistance layer: it never chooses or plays cards.
+// Runs can be explored from these starting cards by the UI without duplicating
+// the core legality rules.
+export function suggestedCardIds(hand, topCard, requiredSuit, pendingPickup = 0, pendingSkip = 0) {
+  if (pendingPickup > 0) {
+    return hand
+      .filter((card) => canCounterPickup(card) || isRedJack(card))
+      .map((card) => card.id)
+  }
+
+  if (pendingSkip > 0) {
+    return hand.filter((card) => card.rank === '8').map((card) => card.id)
+  }
+
+  return hand
+    .filter((card) => canLeadWith(card, topCard, requiredSuit))
+    .map((card) => card.id)
+}
+
 // Validates an ordered list of cards as one legal run: every adjacent
 // pair must connect. (Direction, and reversal mid-run, fall out of this
 // automatically — we never demand a single ascending/descending order,
