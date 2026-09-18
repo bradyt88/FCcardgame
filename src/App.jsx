@@ -626,9 +626,35 @@ function TablePreview({ state, dispatch }) {
   )
   const selectedIds = new Set(state.selectedCardIds)
   const canEndTurn = state.hasDrawnThisTurn && state.pendingPickup === 0 && state.pendingSkip === 0
-  const canDraw = !state.hasDrawnThisTurn && state.pendingPickup === 0 && state.pendingSkip === 0
+  const canDraw = state.phase === 'card-play' && !state.hasDrawnThisTurn && state.pendingPickup === 0 && state.pendingSkip === 0
   const selectedCards = (localPlayer?.hand || []).filter((card) => selectedIds.has(card.id))
+  const [now, setNow] = useState(Date.now())
 
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      const current = Date.now()
+      setNow(current)
+
+      if (state.phase === 'dealing' && state.dealStartedAt && current - state.dealStartedAt >= DEAL_ANIMATION_MS) {
+        dispatch({ type: 'DEAL_COMPLETE' })
+      } else if (state.phase === 'card-play' && state.turnDeadline && current >= state.turnDeadline) {
+        dispatch({ type: 'TURN_TIMEOUT' })
+      } else if (state.phase === 'last-card-declare' && state.lastCardDeadline && current >= state.lastCardDeadline) {
+        dispatch({ type: 'LAST_CARD_TIMEOUT' })
+      } else if (state.phase === 'last-card-challenge' && state.lastCardChallengeDeadline && current >= state.lastCardChallengeDeadline) {
+        dispatch({ type: 'LAST_CARD_CHALLENGE_EXPIRED' })
+      }
+    }, 100)
+
+    return () => window.clearInterval(interval)
+  }, [state.phase, state.turnDeadline, state.lastCardDeadline, state.lastCardChallengeDeadline, state.dealStartedAt, dispatch])
+
+  const turnSecondsLeft = state.turnDeadline ? Math.max(0, Math.ceil((state.turnDeadline - now) / 1000)) : null
+  const declarationSecondsLeft = state.lastCardDeadline ? Math.max(0, Math.ceil((state.lastCardDeadline - now) / 1000)) : null
+  const challengeSecondsLeft = state.lastCardChallengeDeadline ? Math.max(0, Math.ceil((state.lastCardChallengeDeadline - now) / 1000)) : null
+  const wholeHandRun = localPlayer && state.phase === 'card-play'
+    ? findWholeHandRun(localPlayer.hand, topCard, state.requiredSuit)
+    : null
 
   // Seven seats total, always. The local player is visual seat 0 at 6 o'clock.
   // The remaining six seats are evenly spaced around the circle; with seven
