@@ -321,7 +321,7 @@ function reducer(state, action) {
       const effect = computePlayEffect(cards)
 
       let nextState = pushLog(
-        { ...state, players, discard, requiredSuit: effect.power === 'ace' ? state.requiredSuit : null },
+        { ...state, players, discard, requiredSuit: state.requiredSuit },
         `${player.name} played ${cards.map((c) => `${c.rank}${SUIT_SYMBOL[c.suit]}`).join(' \u2192 ')}.`
       )
 
@@ -521,6 +521,7 @@ export default function App() {
 }
 
 function HomeScreen({ onPlay, onRules, onPowerCards }) {
+  const logoSrc = new URL('../public/logo.webp', import.meta.url).href
   return (
     <main className="home-screen">
       <div className="home-orbit orbit-one" aria-hidden="true" />
@@ -532,7 +533,7 @@ function HomeScreen({ onPlay, onRules, onPowerCards }) {
         <div className="home-hero">
           <img
             className="home-logo"
-            src={`${import.meta.env.BASE_URL}logo.webp`}
+            src={logoSrc}
             alt="Family Circle — Together Always"
           />
           <div className="home-title">THE CARD GAME</div>
