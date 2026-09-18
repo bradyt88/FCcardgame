@@ -262,7 +262,6 @@ function reducer(state, action) {
 
       if (effect.cancelPickup) nextState = { ...nextState, pendingPickup: 0 }
       else if (effect.pickupAdd) nextState = { ...nextState, pendingPickup: nextState.pendingPickup + effect.pickupAdd }
-      if (effect.skipAdd) nextState = { ...nextState, pendingSkip: (nextState.pendingSkip || 0) + effect.skipAdd }
 
       if (effect.needsSuitChoice) {
         return { ...nextState, phase: 'suit-pick', pendingEffect: effect }
