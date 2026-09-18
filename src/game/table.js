@@ -44,7 +44,10 @@ export function relativeViewSeat(localSeat, absoluteSeat) {
 }
 
 export function assignDemoSeats(players) {
-  // Demo-only default: assign the first players to the first available seats.
-  // Online lobby seat selection will replace this without changing the table model.
-  return players.map((player, seatIndex) => ({ ...player, seatIndex }))
+  // Demo-only default: assign a seat only when one has not already been fixed.
+  // Online lobby seat selection can supply explicit seatIndex values later.
+  return players.map((player, index) => ({
+    ...player,
+    seatIndex: Number.isInteger(player.seatIndex) ? player.seatIndex : index,
+  }))
 }
