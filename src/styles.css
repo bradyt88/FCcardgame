@@ -1021,3 +1021,73 @@ button { -webkit-tap-highlight-color: transparent; }
   .last-cards-option { flex-direction: column; align-items: stretch; }
   .last-cards-option .btn { width: 100%; }
 }
+
+
+/* Strong, unmistakable legal-card guidance */
+.playing-card.suggested {
+  border: 2px solid #16dfff !important;
+  box-shadow: 0 0 0 2px #16dfff33, 0 0 18px #16dfff66, 0 8px 18px #0008;
+  animation: suggestedPulse 1.2s ease-in-out infinite alternate;
+}
+.playing-card.suggested::after {
+  content: 'PLAYABLE';
+  position: absolute;
+  left: 50%;
+  bottom: -18px;
+  transform: translateX(-50%);
+  color: #16dfff;
+  font-size: 6px;
+  font-weight: 900;
+  letter-spacing: .12em;
+  white-space: nowrap;
+}
+.suggested-dot {
+  width: 8px;
+  height: 8px;
+  background: #16dfff;
+  box-shadow: 0 0 12px #16dfff, 0 0 22px #16dfff88;
+}
+@keyframes suggestedPulse {
+  from { box-shadow: 0 0 0 2px #16dfff22, 0 0 10px #16dfff44, 0 8px 18px #0008; }
+  to { box-shadow: 0 0 0 3px #16dfff44, 0 0 24px #16dfff88, 0 8px 18px #0008; }
+}
+
+.suit-picker {
+  width: min(760px, 100%);
+  margin: 8px auto;
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+  border: 1px solid #16dfff77;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0a1d36, #21153e);
+  box-shadow: 0 0 28px #16dfff1c;
+  text-align: center;
+}
+.suit-picker strong {
+  display: block;
+  color: #f8fbff;
+  font-size: 11px;
+  letter-spacing: .13em;
+}
+.suit-picker span {
+  display: block;
+  margin-top: 4px;
+  color: #9fb0c8;
+  font-size: 9px;
+}
+.suit-picker-buttons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 7px;
+}
+.suit-choice {
+  min-height: 42px;
+}
+.suit-choice.suit-hearts,
+.suit-choice.suit-diamonds { color: #ff5578 !important; }
+.suit-choice.suit-spades,
+.suit-choice.suit-clubs { color: #f4f8ff !important; }
+@media (max-width: 520px) {
+  .suit-picker-buttons { grid-template-columns: 1fr 1fr; }
+}
