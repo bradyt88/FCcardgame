@@ -398,7 +398,7 @@ function PowerCardsScreen({ onBack }) {
   const cards = [
     ['Ace', 'Wild — playable any time and chooses the next suit.'],
     ['2', '+2 pickup and stacks with other 2s and Black Jacks.'],
-    ['7', 'Reverses direction. It cannot be the final card.'],
+    ['7', 'Reverses direction.'],
     ['8', 'Skips the next player and can be stacked/cancelled by another 8.'],
     ['Red Jack', 'Cancels an active pickup.'],
     ['Black Jack', '+5 pickup and stacks with 2s and other Black Jacks.'],
