@@ -473,17 +473,22 @@ function TablePreview({ state }) {
           <div className="table-ring" aria-hidden="true" />
           <div className="table-felt">
             <div className="table-inner-ring" aria-hidden="true" />
-            <img
-              className="table-center-logo"
-              src={`${import.meta.env.BASE_URL}logo.webp`}
-              alt=""
-              aria-hidden="true"
-            />
+            <div className="table-pile-tray" aria-hidden="true">
+              <img
+                className="table-tray-logo"
+                src={`${import.meta.env.BASE_URL}logo.webp`}
+                alt=""
+              />
+            </div>
 
             <div className="table-piles">
               <div className="table-pile">
                 <div className="pile-card pile-card-back">
-                  <span>FC</span>
+                  <img
+                    src={`${import.meta.env.BASE_URL}logo.webp`}
+                    alt=""
+                    aria-hidden="true"
+                  />
                 </div>
                 <span className="pile-label">DRAW PILE</span>
                 <strong>{state.deck?.length ?? 0}</strong>
@@ -528,7 +533,11 @@ function TablePreview({ state }) {
           <div className="hand-placeholder">
             {Array.from({ length: 7 }, (_, i) => (
               <div className="hand-card-back" key={i}>
-                <span>{i + 1}</span>
+                <img
+                  src={`${import.meta.env.BASE_URL}logo.webp`}
+                  alt=""
+                  aria-hidden="true"
+                />
               </div>
             ))}
           </div>
