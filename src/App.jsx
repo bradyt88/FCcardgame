@@ -11,6 +11,7 @@ import {
   isRedJack,
   isBlackJack,
   isPowerCard,
+  suggestedCardIds,
   computePlayEffect,
 } from './game/engine.js'
 import {
@@ -143,6 +144,11 @@ function reducer(state, action) {
 
     case 'CLEAR_SELECTION':
       return { ...state, selectedCardIds: [] }
+
+    case 'END_TURN': {
+      if (!state.hasDrawnThisTurn || state.pendingPickup > 0 || state.pendingSkip > 0) return state
+      return endTurn(state, { reverseCount: 0 })
+    }
 
     case 'ACCEPT_SKIP': {
       const player = playerAtSeat(state.players, state.currentSeat)
@@ -435,13 +441,30 @@ function PowerCardsScreen({ onBack }) {
 }
 
 function GameBody({ state }) {
-  return <TablePreview state={state} />
+  return <TablePreview state={state} dispatch={dispatch} />
 }
 
-function TablePreview({ state }) {
-  const localPlayer = state.players.find((p) => p.id === state.localPlayerId) || state.players[0]
+function TablePreview({ state, dispatch }) {
+  const viewPlayer = playerAtSeat(state.players, state.currentSeat)
+  const localPlayer = state.mode === 'online'
+    ? state.players.find((p) => p.id === state.localPlayerId) || state.players[0]
+    : viewPlayer || state.players[0]
   const topCard = state.discard?.[state.discard.length - 1]
   const activeIds = new Set(state.players.filter((p) => !p.out).map((p) => p.id))
+  const suggestedIds = new Set(
+    suggestedCardIds(
+      localPlayer?.hand || [],
+      topCard,
+      state.requiredSuit,
+      state.pendingPickup,
+      state.pendingSkip,
+    )
+  )
+  const selectedIds = new Set(state.selectedCardIds)
+  const canEndTurn = state.hasDrawnThisTurn && state.pendingPickup === 0 && state.pendingSkip === 0
+  const canDraw = !state.hasDrawnThisTurn && state.pendingPickup === 0 && state.pendingSkip === 0
+  const selectedCards = (localPlayer?.hand || []).filter((card) => selectedIds.has(card.id))
+
 
   // Seven seats total, always. The local player is visual seat 0 at 6 o'clock.
   // The remaining six seats are evenly spaced around the circle; with seven
@@ -495,7 +518,7 @@ function TablePreview({ state }) {
               </div>
 
               <div className="table-pile">
-                <div className="pile-card pile-card-play">
+                <div className={`pile-card pile-card-play ${state.feedback?.success ? 'pile-play-pulse' : ''}`}>
                   <span>{topCard?.rank ?? 'A'}</span>
                   <small>{topCard ? SUIT_SYMBOL[topCard.suit] : '♠'}</small>
                 </div>
@@ -526,24 +549,105 @@ function TablePreview({ state }) {
         </div>
 
         <div className="table-hand">
+          <div className="turn-banner">
+            <div>
+              <span className="turn-kicker">{state.mode === 'online' ? 'YOUR TURN' : 'DEMO TURN'}</span>
+              <strong>{localPlayer?.name || 'Player'}</strong>
+            </div>
+            <span className="turn-status">
+              {state.pendingPickup > 0
+                ? `PICK UP ${state.pendingPickup} OR STACK`
+                : state.pendingSkip > 0
+                  ? 'PLAY AN 8 OR ACCEPT SKIP'
+                  : state.hasDrawnThisTurn
+                    ? 'CARD DRAWN · END TURN READY'
+                    : 'SELECT A CARD OR DRAW'}
+            </span>
+          </div>
+
+          {state.feedback?.error && (
+            <div className="game-feedback error">{state.feedback.error}</div>
+          )}
+
           <div className="hand-heading">
             <span>YOUR HAND</span>
             <strong>{localPlayer?.hand.length ?? 0} CARDS</strong>
+            {suggestedIds.size > 0 && <em>{suggestedIds.size} SUGGESTED</em>}
           </div>
-          <div className="hand-placeholder">
-            {Array.from({ length: 7 }, (_, i) => (
-              <div className="hand-card-back" key={i}>
-                <img
-                  src={`${import.meta.env.BASE_URL}logo.webp`}
-                  alt=""
-                  aria-hidden="true"
-                />
-              </div>
-            ))}
+
+          <div className="hand-cards">
+            {(localPlayer?.hand || []).map((card) => {
+              const suggested = suggestedIds.has(card.id)
+              const selected = selectedIds.has(card.id)
+              return (
+                <button
+                  className={`playing-card face-card ${suggested ? 'suggested' : ''} ${selected ? 'selected' : ''}`}
+                  key={card.id}
+                  onClick={() => dispatch({ type: 'TOGGLE_CARD', payload: card.id })}
+                  aria-label={`${card.rank} of ${card.suit}`}
+                >
+                  <span className="card-corner top-left">
+                    <b>{card.rank}</b><small>{SUIT_SYMBOL[card.suit]}</small>
+                  </span>
+                  <span className={`card-suit-large suit-${card.suit}`}>{SUIT_SYMBOL[card.suit]}</span>
+                  <span className="card-corner bottom-right">
+                    <b>{card.rank}</b><small>{SUIT_SYMBOL[card.suit]}</small>
+                  </span>
+                  {suggested && <span className="suggested-dot" aria-hidden="true" />}
+                </button>
+              )
+            })}
           </div>
+
+          <div className="table-controls">
+            {state.pendingPickup > 0 ? (
+              <>
+                <button
+                  className="btn primary"
+                  disabled={selectedCards.length === 0}
+                  onClick={() => dispatch({ type: 'PLAY_PICKUP_RESPONSE' })}
+                >
+                  PLAY ON TOP
+                </button>
+                <button className="btn secondary" onClick={() => dispatch({ type: 'DRAW_PICKUP' })}>
+                  PICK UP {state.pendingPickup}
+                </button>
+              </>
+            ) : state.pendingSkip > 0 ? (
+              <>
+                <button
+                  className="btn primary"
+                  disabled={selectedCards.length === 0}
+                  onClick={() => dispatch({ type: 'PLAY_SELECTED' })}
+                >
+                  PLAY 8
+                </button>
+                <button className="btn secondary" onClick={() => dispatch({ type: 'ACCEPT_SKIP' })}>
+                  ACCEPT SKIP
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  className="btn primary"
+                  disabled={selectedCards.length === 0}
+                  onClick={() => dispatch({ type: 'PLAY_SELECTED' })}
+                >
+                  PLAY {selectedCards.length ? `${selectedCards.length} CARD${selectedCards.length > 1 ? 'S' : ''}` : 'CARD'}
+                </button>
+                <button className="btn secondary" disabled={!canDraw} onClick={() => dispatch({ type: 'DRAW_ONE' })}>
+                  DRAW CARD
+                </button>
+                <button className="btn secondary" disabled={!canEndTurn} onClick={() => dispatch({ type: 'END_TURN' })}>
+                  END TURN
+                </button>
+              </>
+            )}
+          </div>
+
           <div className="table-demo-note">
-            <span>TABLE PROTOTYPE</span>
-            <p>Seven total seats. YOU is always at 6 o'clock on your device. There is deliberately no seat directly opposite.</p>
+            <span>{state.mode === 'online' ? 'ONLINE TABLE VIEW' : 'LOCAL DEMO VIEW'}</span>
+            <p>Seven fixed seats. Your view keeps you at 6 o'clock. Suggested cards are assistance only; you choose every play.</p>
           </div>
         </div>
       </section>
