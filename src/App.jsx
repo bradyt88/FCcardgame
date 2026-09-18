@@ -748,7 +748,7 @@ function TablePreview({ state, dispatch }) {
               <div className="table-pile">
                 <div className={`pile-card pile-card-play suit-${topCard?.rank === 'A' && state.requiredSuit ? state.requiredSuit : (topCard?.suit || 'spades')} ${state.feedback?.success || state.aceSuitChange ? 'pile-play-pulse' : ''}`}>
                   <span>{topCard?.rank ?? 'A'}</span>
-                  <small>{topCard ? SUIT_SYMBOL[topCard.suit] : '♠'}</small>
+                  <small>{topCard ? SUIT_SYMBOL[topCard.rank === 'A' && state.requiredSuit ? state.requiredSuit : topCard.suit] : '♠'}</small>
                 </div>
                 <span className="pile-label">PLAY PILE</span>
               </div>
