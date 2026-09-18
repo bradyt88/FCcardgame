@@ -142,7 +142,10 @@ button { -webkit-tap-highlight-color: transparent; }
 }
 .home-title {
   margin-top: 2px;
-  color: var(--white);
+  background: linear-gradient(90deg, #ff5bd7 0%, #ffffff 42%, #58e9ff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
   font-family: 'Fraunces', Georgia, serif;
   font-size: clamp(22px, 5vw, 30px);
   font-weight: 700;
