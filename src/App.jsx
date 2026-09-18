@@ -307,7 +307,7 @@ function reducer(state, action) {
         return { ...state, feedback: { error: 'A skip is active. Play an 8 to continue the stack, or accept the skip.' } }
       }
       if (!canLeadWith(cards[0], topCard, state.requiredSuit)) {
-        return { ...state, feedback: { error: `That doesn't connect to the ${topCard.rank} of ${topCard.suit}${state.requiredSuit ? ` (must be ${state.requiredSuit})` : ''}.` } }
+        return { ...state, feedback: { error: `That doesn't connect to the ${topCard.rank} of ${topCard.suit}${state.requiredSuit ? ` — ACE changed the suit to ${state.requiredSuit.toUpperCase()}. Play a ${state.requiredSuit.toUpperCase()} or another ACE.` : '.'}` } }
       }
       if (!validateRunChain(cards)) {
         return { ...state, feedback: { error: 'Those cards don\u2019t form a valid connected run.' } }
