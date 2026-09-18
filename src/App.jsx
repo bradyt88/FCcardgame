@@ -321,7 +321,7 @@ function reducer(state, action) {
       const effect = computePlayEffect(cards)
 
       let nextState = pushLog(
-        { ...state, players, discard, requiredSuit: state.requiredSuit },
+        { ...state, players, discard, requiredSuit: effect.power === 'ace' ? state.requiredSuit : null },
         `${player.name} played ${cards.map((c) => `${c.rank}${SUIT_SYMBOL[c.suit]}`).join(' \u2192 ')}.`
       )
 
