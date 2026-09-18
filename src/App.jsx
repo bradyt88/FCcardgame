@@ -435,40 +435,110 @@ function PowerCardsScreen({ onBack }) {
 }
 
 function GameBody({ state }) {
-  const phaseLabel = {
-    'demo-pass-device': 'Demo handoff',
-    'pickup-response': 'Pickup response',
-    'skip-response': 'Skip response',
-    'card-play': 'Card play',
-    'suit-pick': 'Suit choice',
-    'round-over': 'Round complete',
-  }[state.phase] || 'Game';
+  return <TablePreview state={state} />
+}
+
+function TablePreview({ state }) {
+  const localPlayer = state.players.find((p) => p.id === state.localPlayerId) || state.players[0]
+  const topCard = state.discard?.[state.discard.length - 1]
+  const activeIds = new Set(state.players.filter((p) => !p.out).map((p) => p.id))
+
+  // Seven seats total, always. The local player is visual seat 0 at 6 o'clock.
+  // The remaining six seats are evenly spaced around the circle; with seven
+  // positions there is intentionally no diametrically opposite seat.
+  const seats = Array.from({ length: 7 }, (_, viewSeat) => {
+    const player = state.players.find((p) => (
+      p.seatIndex === (
+        (localPlayer?.seatIndex ?? 0) + viewSeat
+      ) % 7
+    ))
+    return { viewSeat, player }
+  })
 
   return (
-    <div className="stage2-screen">
-      <section className="stage2-card" aria-label="Family Circle Card Game Stage 2 placeholder">
-        <img
-          className="stage2-logo"
-          src={`${import.meta.env.BASE_URL}logo.webp`}
-          alt="Family Circle — Together Always"
-        />
-        <div className="stage2-kicker">STAGE 1</div>
-        <h1>Home experience ready</h1>
-        <p>
-          The old table interface has been removed from the presentation layer.
-          The seven-seat online table will be rebuilt from the approved reference
-          in Stage 2.
-        </p>
-        <div className="stage2-note">
-          <span>Current game state</span>
-          <strong>{phaseLabel}</strong>
+    <main className="table-preview-screen">
+      <header className="table-preview-header">
+        <div className="table-brand">
+          <img src={`${import.meta.env.BASE_URL}logo.webp`} alt="Family Circle" />
+          <div>
+            <div className="table-brand-name">FAMILY CIRCLE</div>
+            <div className="table-brand-sub">THE CARD GAME</div>
+          </div>
         </div>
-        <p className="stage2-footnote">
-          The card rules engine remains in <code>src/game/engine.js</code>; this screen
-          is only a temporary stage boundary.
-        </p>
+        <div className="table-view-badge">ONLINE VIEW · 7 SEAT TABLE</div>
+      </header>
+
+      <section className="table-layout">
+        <div className="table-wrap">
+          <div className="table-ring" aria-hidden="true" />
+          <div className="table-felt">
+            <div className="table-inner-ring" aria-hidden="true" />
+            <img
+              className="table-center-logo"
+              src={`${import.meta.env.BASE_URL}logo.webp`}
+              alt=""
+              aria-hidden="true"
+            />
+
+            <div className="table-piles">
+              <div className="table-pile">
+                <div className="pile-card pile-card-back">
+                  <span>FC</span>
+                </div>
+                <span className="pile-label">DRAW PILE</span>
+                <strong>{state.deck?.length ?? 0}</strong>
+              </div>
+
+              <div className="table-pile">
+                <div className="pile-card pile-card-play">
+                  <span>{topCard?.rank ?? 'A'}</span>
+                  <small>{topCard ? SUIT_SYMBOL[topCard.suit] : '♠'}</small>
+                </div>
+                <span className="pile-label">PLAY PILE</span>
+              </div>
+            </div>
+
+            <div className="seat-layer">
+              {seats.map(({ viewSeat, player }) => {
+                const isYou = viewSeat === 0
+                const occupied = Boolean(player && activeIds.has(player.id))
+                return (
+                  <div
+                    className={`table-seat table-seat-${viewSeat} ${isYou ? 'you' : ''} ${occupied ? 'occupied' : 'empty'}`}
+                    key={viewSeat}
+                  >
+                    <div className="seat-disc">
+                      <span>{isYou ? 'YOU' : occupied ? player.name.slice(0, 8) : 'OPEN'}</span>
+                    </div>
+                    <div className="seat-caption">
+                      {isYou ? 'YOU · 6 O\'CLOCK' : occupied ? `${player.name} · ${player.hand.length} CARDS` : 'OPEN SEAT'}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+
+        <div className="table-hand">
+          <div className="hand-heading">
+            <span>YOUR HAND</span>
+            <strong>{localPlayer?.hand.length ?? 0} CARDS</strong>
+          </div>
+          <div className="hand-placeholder">
+            {Array.from({ length: 7 }, (_, i) => (
+              <div className="hand-card-back" key={i}>
+                <span>{i + 1}</span>
+              </div>
+            ))}
+          </div>
+          <div className="table-demo-note">
+            <span>TABLE PROTOTYPE</span>
+            <p>Seven total seats. YOU is always at 6 o'clock on your device. There is deliberately no seat directly opposite.</p>
+          </div>
+        </div>
       </section>
-    </div>
+    </main>
   )
 }
 
