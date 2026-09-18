@@ -54,9 +54,9 @@ function nextActiveIndex(players, fromIndex, direction, extraSkips = 0) {
 
 // ---------- initial / reducer ----------
 
-const initialState = { phase: 'setup' }
+const initialState = { phase: 'home' }
 
-function startNewGame(setup) {
+function startNewGame(setup, dealerIndexOverride = null) {
   const { players: rawPlayers, handSize, wrongAnswerSkipsPlay } = setup
   const deck = shuffle(makeDeck())
   const { hands, remainingDeck } = dealHands(deck, rawPlayers.length, handSize)
@@ -77,12 +77,17 @@ function startNewGame(setup) {
   }
   deckLeft = [...deckLeft, ...bottomBuffer]
 
+  const dealerIndex = Number.isInteger(dealerIndexOverride)
+    ? dealerIndexOverride
+    : Math.floor(Math.random() * players.length)
+
   return {
     phase: 'pass-device',
     settings: { handSize, wrongAnswerSkipsPlay },
     players,
-    currentPlayerIndex: 0,
-    direction: 1,
+    dealerIndex,
+    currentPlayerIndex: dealerIndex,
+    direction: -1,
     deck: deckLeft,
     discard: [firstCard],
     requiredSuit: null,
@@ -95,7 +100,7 @@ function startNewGame(setup) {
     selectedCardIds: [],
     hasDrawnThisTurn: false,
     feedback: null,
-    log: [`New round dealt. ${firstCard.rank} of ${firstCard.suit} starts the pile.`],
+    log: [`New round dealt. ${players[dealerIndex].name} is the random dealer and starts. ${firstCard.rank} of ${firstCard.suit} starts the pile.`],
     winner: null,
   }
 }
@@ -110,8 +115,17 @@ function reducer(state, action) {
     case 'START_GAME':
       return startNewGame(action.payload)
 
-    case 'BACK_TO_SETUP':
+    case 'GO_HOME':
+      return { phase: 'home' }
+
+    case 'GO_TO_SETUP':
       return { phase: 'setup' }
+
+    case 'SHOW_RULES':
+      return { phase: 'rules' }
+
+    case 'SHOW_POWER_CARDS':
+      return { phase: 'power-cards' }
 
     case 'READY_FOR_TURN': {
       const questions = drawQuestions(state.askedIds, 4)
@@ -312,7 +326,8 @@ function reducer(state, action) {
         handSize: state.settings.handSize,
         wrongAnswerSkipsPlay: state.settings.wrongAnswerSkipsPlay,
       }
-      return startNewGame(setup)
+      const nextDealer = nextActiveIndex(state.players, state.dealerIndex, -1)
+      return startNewGame(setup, nextDealer)
     }
 
     default:
@@ -341,8 +356,26 @@ function endTurn(state, effect) {
 export default function App() {
   const [state, dispatch] = useReducer(reducer, initialState)
 
+  if (state.phase === 'home') {
+    return (
+      <HomeScreen
+        onPlay={() => dispatch({ type: 'GO_TO_SETUP' })}
+        onRules={() => dispatch({ type: 'SHOW_RULES' })}
+        onPowerCards={() => dispatch({ type: 'SHOW_POWER_CARDS' })}
+      />
+    )
+  }
+
   if (state.phase === 'setup') {
-    return <SetupScreen onStart={(payload) => dispatch({ type: 'START_GAME', payload })} />
+    return <SetupScreen onBack={() => dispatch({ type: 'GO_HOME' })} onStart={(payload) => dispatch({ type: 'START_GAME', payload })} />
+  }
+
+  if (state.phase === 'rules') {
+    return <RulesScreen onBack={() => dispatch({ type: 'GO_HOME' })} />
+  }
+
+  if (state.phase === 'power-cards') {
+    return <PowerCardsScreen onBack={() => dispatch({ type: 'GO_HOME' })} />
   }
 
   return (
@@ -353,12 +386,82 @@ export default function App() {
   )
 }
 
+function HomeScreen({ onPlay, onRules, onPowerCards }) {
+  return (
+    <div className="home-screen">
+      <div className="home-orbit orbit-one" />
+      <div className="home-orbit orbit-two" />
+      <div className="home-card">
+        <img className="home-logo" src={${import.meta.env.BASE_URL}logo.png} alt="Family Circle" />
+        <p className="home-tag">TOGETHER ALWAYS</p>
+        <div className="home-actions">
+          <button className="btn primary big home-play" onClick={onPlay}>PLAY A GAME</button>
+          <div className="home-secondary">
+            <button className="btn secondary" onClick={onRules}>RULES</button>
+            <button className="btn secondary" onClick={onPowerCards}>POWER CARDS</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function RulesScreen({ onBack }) {
+  return (
+    <div className="info-screen">
+      <div className="info-card">
+        <img className="info-logo" src={${import.meta.env.BASE_URL}logo.png} alt="Family Circle" />
+        <h1>Family Circle Rules</h1>
+        <p className="info-intro">Core rules currently represented by the supplied testing build.</p>
+        <div className="info-grid">
+          <div><strong>Players</strong><span>2–7 players</span></div>
+          <div><strong>Cards</strong><span>Standard 52-card deck</span></div>
+          <div><strong>Starting hand</strong><span>7 cards by default</span></div>
+          <div><strong>Turn</strong><span>Dealer starts; play then moves to the left</span></div>
+          <div><strong>Runs</strong><span>Cards connect by same suit + adjacent rank, or same rank in different suits.</span></div>
+          <div><strong>Draw pile</strong><span>If exhausted, the discard pile is turned over without shuffling, keeping the top card active.</span></div>
+        </div>
+        <button className="btn secondary back-btn" onClick={onBack}>BACK</button>
+      </div>
+    </div>
+  )
+}
+
+function PowerCardsScreen({ onBack }) {
+  const cards = [
+    ['Ace', 'Wild — playable any time and chooses the next suit.'],
+    ['2', '+2 pickup and stacks with other 2s and Black Jacks.'],
+    ['7', 'Reverses direction. The supplied engine also allows a 7 to finish a hand.'],
+    ['8', 'Skips the next player and can be stacked/cancelled by another 8.'],
+    ['Red Jack', 'Cancels an active pickup.'],
+    ['Black Jack', '+5 pickup and stacks with 2s and other Black Jacks.'],
+  ]
+  return (
+    <div className="info-screen">
+      <div className="info-card">
+        <img className="info-logo" src={${import.meta.env.BASE_URL}logo.png} alt="Family Circle" />
+        <h1>Power Cards</h1>
+        <p className="info-intro">Reference for the power effects already implemented in the supplied engine.</p>
+        <div className="power-list">
+          {cards.map(([name, text]) => (
+            <div className="power-row" key={name}>
+              <span className="power-name">{name}</span>
+              <span className="power-text">{text}</span>
+            </div>
+          ))}
+        </div>
+        <button className="btn secondary back-btn" onClick={onBack}>BACK</button>
+      </div>
+    </div>
+  )
+}
+
 function TopBar({ state }) {
   const player = state.players[state.currentPlayerIndex]
   return (
     <div className="topbar">
       <div className="brand-lockup">
-        <img src="/logo.png" alt="Family Circle" />
+        <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Family Circle" />
         <div>
           <div className="brand-title">FAMILY CIRCLE</div>
           <div className="brand-subtitle">TOGETHER ALWAYS</div>
@@ -366,7 +469,7 @@ function TopBar({ state }) {
       </div>
       <div className="stage-status">
         <span className="status-dot" />
-        <span>{player ? `${player.name}\u2019s turn \u00b7 ${state.direction === 1 ? 'clockwise' : 'counter-clockwise'}` : ''}</span>
+        <span>{player ? `${player.name}\u2019s turn \u00b7 ${state.direction === 1 ? 'clockwise' : 'left / counter-clockwise'} \u00b7 dealer: ${state.players[state.dealerIndex]?.name || ''}` : ''}</span>
       </div>
     </div>
   )
@@ -653,7 +756,7 @@ function TableView({ state, dispatch, pickupMode }) {
   return (
     <div className="game-screen">
       <div className="table-felt">
-        <img className="table-bg" src="/table.svg" alt="" />
+        <div className="table-surface" aria-hidden="true" />
         <div className="seat-ring">
           {seatOrder.map((p, i) => (
             <div
@@ -754,7 +857,7 @@ function PlayingCard({ card, selected, order, onClick, dim }) {
 
 // ---------- setup ----------
 
-function SetupScreen({ onStart }) {
+function SetupScreen({ onBack, onStart }) {
   const [count, setCount] = useState(4)
   const [names, setNames] = useState(['Player 1', 'Player 2', 'Player 3', 'Player 4', 'Player 5', 'Player 6', 'Player 7'])
   const [teamMode, setTeamMode] = useState('none') // none | 2v2 | 3v3
@@ -787,9 +890,12 @@ function SetupScreen({ onStart }) {
   return (
     <div className="setup-screen">
       <div className="setup-card">
-        <img className="setup-logo" src="/logo.png" alt="Family Circle" />
+        <img className="setup-logo" src={`${import.meta.env.BASE_URL}logo.png`} alt="Family Circle" />
         <h1>Family Circle</h1>
         <p className="setup-tag">Together Always \u2014 set up tonight\u2019s round</p>
+
+        <button className="text-link back-link" onClick={onBack}>← Back</button>
+        <div className="setup-dealer-note">Dealer: <strong>Random</strong> — the game chooses the opening dealer automatically.</div>
 
         <label className="field-label">Number of players ({count})</label>
         <input type="range" min="2" max="7" value={count} onChange={(e) => setCount(Number(e.target.value))} />
@@ -848,7 +954,7 @@ function SetupScreen({ onStart }) {
 
         </details>
 
-        <button className="btn primary big" onClick={handleStart}>Deal the Cards</button>
+        <button className="btn primary big" onClick={handleStart}>START GAME</button>
       </div>
     </div>
   )
