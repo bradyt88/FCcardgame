@@ -673,7 +673,7 @@ button { -webkit-tap-highlight-color: transparent; }
 /* ---------- setup ---------- */
 .setup-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 30px; }
 .setup-card {
-  width: min(560px, 100%); background: #0b1b14ee; border: 1px solid var(--line); border-radius: 20px;
+  width: min(560px, 100%); background: linear-gradient(160deg, #07152b, #101a35 55%, #241337); border: 1px solid var(--line); border-radius: 20px;
   padding: 32px; text-align: center; box-shadow: 0 30px 80px #000a;
 }
 .setup-logo { width: 96px; height: 96px; border-radius: 50%; object-fit: cover; margin-bottom: 12px; }
