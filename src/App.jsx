@@ -155,6 +155,16 @@ function reducer(state, action) {
     case 'SHOW_POWER_CARDS':
       return { phase: 'power-cards' }
 
+    case 'DEAL_COMPLETE': {
+      if (state.phase !== 'dealing') return state
+      return {
+        ...state,
+        phase: state.pendingPickup > 0 ? 'pickup-response' : 'card-play',
+        turnDeadline: Date.now() + TURN_SECONDS * 1000,
+        dealStartedAt: null,
+      }
+    }
+
     case 'READY_FOR_CARDS': {
       const currentPlayer = playerAtSeat(state.players, state.currentSeat)
       const demoView = state.mode === 'local-demo' && currentPlayer
@@ -172,7 +182,7 @@ function reducer(state, action) {
         : state.pendingSkip > 0
           ? 'skip-response'
           : 'card-play'
-      return { ...base, phase }
+      return { ...base, phase, turnDeadline: Date.now() + TURN_SECONDS * 1000 }
     }
 
     case 'TOGGLE_CARD': {
@@ -236,12 +246,22 @@ function reducer(state, action) {
 
       if (newHand.length === 0) {
         return pushLog(
-          { ...state, players, discard, pendingPickup: 0, phase: 'round-over', winner: player.id },
+          { ...state, players, discard, pendingPickup: 0, phase: 'round-over', winner: player.id, turnDeadline: null },
           `${player.name} goes out!`
         )
       }
 
       const nextState = pushLog({ ...state, players, discard, pendingPickup, requiredSuit: null }, logLine)
+      if (newHand.length === 1) {
+        return {
+          ...nextState,
+          phase: 'last-card-declare',
+          lastCardPlayerId: player.id,
+          lastCardDeadline: Date.now() + DECLARATION_SECONDS * 1000,
+          lastCardChallengeDeadline: null,
+          turnDeadline: null,
+        }
+      }
       return endTurn(nextState, { reverseCount: 0 })
     }
 
@@ -249,7 +269,7 @@ function reducer(state, action) {
       const player = playerAtSeat(state.players, state.currentSeat)
       const { drawn, deck, discard } = drawCards(state.deck, state.discard, state.pendingPickup)
       const players = state.players.map((p) => (
-        p.seatIndex === state.currentSeat ? { ...player, hand: [...player.hand, ...drawn] } : p
+        p.seatIndex === state.currentSeat ? { ...player, hand: sortHand([...player.hand, ...drawn]) } : p
       ))
       const nextState = pushLog(
         { ...state, players, deck, discard, pendingPickup: 0 },
@@ -263,7 +283,7 @@ function reducer(state, action) {
       const player = playerAtSeat(state.players, state.currentSeat)
       const { drawn, deck, discard } = drawCards(state.deck, state.discard, 1)
       const players = state.players.map((p) => (
-        p.seatIndex === state.currentSeat ? { ...player, hand: [...player.hand, ...drawn] } : p
+        p.seatIndex === state.currentSeat ? { ...player, hand: sortHand([...player.hand, ...drawn]) } : p
       ))
       return pushLog(
         { ...state, players, deck, discard, hasDrawnThisTurn: true },
@@ -306,7 +326,18 @@ function reducer(state, action) {
       )
 
       if (finishing) {
-        return { ...nextState, phase: 'round-over', winner: player.id }
+        return { ...nextState, phase: 'round-over', winner: player.id, turnDeadline: null }
+      }
+
+      if (newHand.length === 1) {
+        return {
+          ...nextState,
+          phase: 'last-card-declare',
+          lastCardPlayerId: player.id,
+          lastCardDeadline: Date.now() + DECLARATION_SECONDS * 1000,
+          lastCardChallengeDeadline: null,
+          turnDeadline: null,
+        }
       }
 
       if (effect.cancelPickup) nextState = { ...nextState, pendingPickup: 0 }
@@ -322,6 +353,93 @@ function reducer(state, action) {
     case 'CHOOSE_SUIT': {
       const withSuit = { ...state, requiredSuit: action.payload, pendingEffect: undefined }
       return endTurn(withSuit, state.pendingEffect || {})
+    }
+
+    case 'DECLARE_LAST_CARD': {
+      if (state.phase !== 'last-card-declare') return state
+      const player = playerAtSeat(state.players, state.currentSeat)
+      if (!player || player.id !== state.lastCardPlayerId) return state
+      return {
+        ...state,
+        phase: 'last-card-challenge',
+        lastCardDeadline: null,
+        lastCardChallengeDeadline: Date.now() + CHALLENGE_SECONDS * 1000,
+        feedback: { success: 'LAST CARD!' },
+      }
+    }
+
+    case 'LAST_CARD_TIMEOUT': {
+      if (state.phase !== 'last-card-declare') return state
+      return {
+        ...state,
+        phase: 'last-card-challenge',
+        lastCardDeadline: null,
+        lastCardChallengeDeadline: Date.now() + CHALLENGE_SECONDS * 1000,
+        feedback: { success: 'LAST CARD WAS NOT DECLARED' },
+      }
+    }
+
+    case 'CHALLENGE_LAST_CARD': {
+      if (state.phase !== 'last-card-challenge') return state
+      const player = playerAtSeat(state.players, state.currentSeat)
+      if (!player || player.id !== state.lastCardPlayerId) return state
+      const { drawn, deck, discard } = drawCards(state.deck, state.discard, 1)
+      const players = state.players.map((p) => (
+        p.id === player.id ? { ...player, hand: sortHand([...player.hand, ...drawn]) } : p
+      ))
+      const nextState = pushLog(
+        {
+          ...state,
+          players,
+          deck,
+          discard,
+          lastCardChallengeDeadline: null,
+          lastCardPlayerId: null,
+          feedback: { success: 'LAST CARD CHALLENGE — PICK UP 1' },
+        },
+        player.name + ' was challenged and picked up 1 card.'
+      )
+      return endTurn(nextState, { reverseCount: 0 })
+    }
+
+    case 'LAST_CARD_CHALLENGE_EXPIRED': {
+      if (state.phase !== 'last-card-challenge') return state
+      return endTurn(
+        {
+          ...state,
+          lastCardChallengeDeadline: null,
+          lastCardPlayerId: null,
+        },
+        { reverseCount: 0 }
+      )
+    }
+
+    case 'DECLARE_LAST_CARDS': {
+      const player = playerAtSeat(state.players, state.currentSeat)
+      if (!player) return state
+      const run = findWholeHandRun(player.hand, state.discard?.[state.discard.length - 1], state.requiredSuit)
+      if (!run) return { ...state, feedback: { error: 'Your whole hand does not form a legal finishing run.' } }
+      return {
+        ...state,
+        selectedCardIds: run.map((card) => card.id),
+        lastCardsAnnounced: true,
+        feedback: { success: 'LAST CARDS!' },
+      }
+    }
+
+    case 'TURN_TIMEOUT': {
+      if (state.phase !== 'card-play' || !state.turnDeadline || Date.now() < state.turnDeadline) return state
+      const player = playerAtSeat(state.players, state.currentSeat)
+      if (!player) return state
+      const { drawn, deck, discard } = drawCards(state.deck, state.discard, 1)
+      const players = state.players.map((p) => (
+        p.id === player.id ? { ...player, hand: sortHand([...player.hand, ...drawn]) } : p
+      ))
+      const nextState = pushLog(
+        { ...state, players, deck, discard, hasDrawnThisTurn: true },
+        player.name + ' timed out and picked up 1 card.'
+      )
+      return endTurn(nextState, { reverseCount: 0 })
     }
 
     case 'PLAY_AGAIN': {
@@ -356,12 +474,15 @@ function advanceToNextTurn(state, effect = {}) {
     direction,
     currentSeat: nextSeat,
     pendingSkip,
-    phase: state.mode === 'online'
-      ? (pendingSkip > 0 ? 'skip-response' : 'card-play')
-      : 'demo-pass-device',
+    phase: pendingSkip > 0 ? 'skip-response' : 'card-play',
     selectedCardIds: [],
     hasDrawnThisTurn: false,
     feedback: null,
+    turnDeadline: Date.now() + TURN_SECONDS * 1000,
+    lastCardDeadline: null,
+    lastCardChallengeDeadline: null,
+    lastCardPlayerId: null,
+    lastCardsAnnounced: false,
   }
 }
 
