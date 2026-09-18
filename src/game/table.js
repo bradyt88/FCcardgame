@@ -12,10 +12,15 @@ export const DEFAULT_DIRECTION = -1 // left / counter-clockwise
 // CSS uses 0deg at the right and positive degrees downward.
 // Starting at 90deg puts visual seat 0 at 6 o'clock.
 // Decreasing the angle moves counter-clockwise around the table.
-export const TABLE_SEAT_ANGLES = Array.from(
-  { length: TABLE_SEAT_COUNT },
-  (_, seat) => 90 - (seat * 360) / TABLE_SEAT_COUNT,
-)
+export const TABLE_SEAT_ANGLES = [
+  270,
+  321.428571,
+  12.857143,
+  64.285714,
+  115.714286,
+  167.142857,
+  218.571429,
+]
 
 export function nextOccupiedSeat(players, fromSeat, direction = DEFAULT_DIRECTION) {
   if (!players?.length) return null
