@@ -112,7 +112,12 @@ function reducer(state, action) {
 
     case 'READY_FOR_CARDS': {
       const base = { ...state, feedback: null, selectedCardIds: [], hasDrawnThisTurn: false }
-      return { ...base, phase: state.pendingPickup > 0 ? 'pickup-response' : 'card-play' }
+      const phase = state.pendingPickup > 0
+        ? 'pickup-response'
+        : state.pendingSkip > 0
+          ? 'skip-response'
+          : 'card-play'
+      return { ...base, phase }
     }
 
     case 'TOGGLE_CARD': {
@@ -197,8 +202,9 @@ function reducer(state, action) {
       if (state.hasDrawnThisTurn) return state
       const player = playerAtSeat(state.players, state.currentSeat)
       const { drawn, deck, discard } = drawCards(state.deck, state.discard, 1)
-      const players = state.players.slice()
-      players[state.currentPlayerIndex] = { ...player, hand: [...player.hand, ...drawn] }
+      const players = state.players.map((p) => (
+        p.seatIndex === state.currentSeat ? { ...player, hand: [...player.hand, ...drawn] } : p
+      ))
       return pushLog(
         { ...state, players, deck, discard, hasDrawnThisTurn: true },
         `${player.name} drew a card.`
@@ -228,8 +234,9 @@ function reducer(state, action) {
         return { ...state, feedback: { error: 'You can\u2019t finish your hand on that power card.' } }
       }
 
-      const players = state.players.slice()
-      players[state.currentPlayerIndex] = { ...player, hand: newHand }
+      const players = state.players.map((p) => (
+        p.seatIndex === state.currentSeat ? { ...player, hand: newHand } : p
+      ))
       const discard = [...state.discard, ...cards]
       const effect = computePlayEffect(cards)
 
@@ -418,8 +425,9 @@ function PowerCardsScreen({ onBack }) {
 
 function GameBody({ state }) {
   const phaseLabel = {
-    'pass-device': 'Game table',
+    'demo-pass-device': 'Demo handoff',
     'pickup-response': 'Pickup response',
+    'skip-response': 'Skip response',
     'card-play': 'Card play',
     'suit-pick': 'Suit choice',
     'round-over': 'Round complete',
@@ -465,7 +473,7 @@ function SetupScreen({ onBack, onStart }) {
       id: `p${i}`,
       name: names[i] || `Player ${i + 1}`,
     }))
-    onStart({ players, handSize })
+    onStart({ players, handSize, mode: 'local-demo' })
   }
 
   return (
