@@ -128,6 +128,15 @@ function reducer(state, action) {
     case 'CLEAR_SELECTION':
       return { ...state, selectedCardIds: [] }
 
+    case 'ACCEPT_SKIP': {
+      const player = playerAtSeat(state.players, state.currentSeat)
+      const nextState = pushLog(
+        { ...state, pendingSkip: 0 },
+        `${player.name} accepted the skip.`
+      )
+      return advanceToNextTurn(nextState)
+    }
+
     case 'PLAY_PICKUP_RESPONSE': {
       const player = playerAtSeat(state.players, state.currentSeat)
       const cards = state.selectedCardIds.map((id) => player.hand.find((c) => c.id === id))
@@ -140,8 +149,8 @@ function reducer(state, action) {
       }
 
       const newHand = player.hand.filter((c) => !state.selectedCardIds.includes(c.id))
-      if (newHand.length === 0 && !cards.some((c) => c.rank === '7')) {
-        return { ...state, feedback: { error: "You can't finish your hand on a power card — draw the pickup instead." } }
+      if (newHand.length === 0 && !canFinishOn(cards[cards.length - 1])) {
+        return { ...state, feedback: { error: "You can't finish your hand on a power card." } }
       }
 
       const players = state.players.map((p) => (
@@ -168,7 +177,7 @@ function reducer(state, action) {
       }
 
       const nextState = pushLog({ ...state, players, discard, pendingPickup, requiredSuit: null }, logLine)
-      return endTurn(nextState, { skipAdd: 0, reverseCount: 0 })
+      return endTurn(nextState, { reverseCount: 0 })
     }
 
     case 'DRAW_PICKUP': {
@@ -181,7 +190,7 @@ function reducer(state, action) {
         { ...state, players, deck, discard, pendingPickup: 0 },
         `${player.name} picked up ${drawn.length} card(s).`
       )
-      return endTurn(nextState, { skipAdd: 0, reverseCount: 0 })
+      return endTurn(nextState, { reverseCount: 0 })
     }
 
     case 'DRAW_ONE': {
@@ -203,6 +212,9 @@ function reducer(state, action) {
       if (cards.length === 0) return state
 
       const topCard = state.discard[state.discard.length - 1]
+      if (state.pendingSkip > 0 && cards.some((card) => card.rank !== '8')) {
+        return { ...state, feedback: { error: 'A skip is active. Play an 8 to continue the stack, or accept the skip.' } }
+      }
       if (!canLeadWith(cards[0], topCard, state.requiredSuit)) {
         return { ...state, feedback: { error: `That doesn't connect to the ${topCard.rank} of ${topCard.suit}${state.requiredSuit ? ` (must be ${state.requiredSuit})` : ''}.` } }
       }
@@ -232,6 +244,7 @@ function reducer(state, action) {
 
       if (effect.cancelPickup) nextState = { ...nextState, pendingPickup: 0 }
       else if (effect.pickupAdd) nextState = { ...nextState, pendingPickup: nextState.pendingPickup + effect.pickupAdd }
+      if (effect.skipAdd) nextState = { ...nextState, pendingSkip: (nextState.pendingSkip || 0) + effect.skipAdd }
 
       if (effect.needsSuitChoice) {
         return { ...nextState, phase: 'suit-pick', pendingEffect: effect }
@@ -247,10 +260,15 @@ function reducer(state, action) {
 
     case 'PLAY_AGAIN': {
       const setup = {
-        players: state.players.map((p) => ({ id: p.id, name: p.name })),
+        players: state.players.map((p) => ({
+          id: p.id,
+          name: p.name,
+          seatIndex: p.seatIndex,
+        })),
         handSize: state.settings.handSize,
+        mode: state.mode,
       }
-      const nextDealer = nextActiveIndex(state.players, state.dealerIndex, -1)
+      const nextDealer = nextOccupiedSeat(state.players, state.dealerSeat, DEFAULT_DIRECTION)
       return startNewGame(setup, nextDealer)
     }
 
@@ -259,19 +277,29 @@ function reducer(state, action) {
   }
 }
 
-function endTurn(state, effect) {
+function advanceToNextTurn(state, effect = {}) {
   let direction = state.direction
   if (effect.reverseCount && effect.reverseCount % 2 === 1) direction = direction * -1
-  const nextIndex = nextActiveIndex(state.players, state.currentPlayerIndex, direction, effect.skipAdd || 0)
+
+  const pendingSkip = (state.pendingSkip || 0) + (effect.skipAdd || 0)
+  const nextSeat = nextOccupiedSeat(state.players, state.currentSeat, direction)
+
   return {
     ...state,
     direction,
-    currentPlayerIndex: nextIndex,
-    phase: 'pass-device',
+    currentSeat: nextSeat,
+    pendingSkip,
+    phase: state.mode === 'online'
+      ? (pendingSkip > 0 ? 'skip-response' : 'card-play')
+      : 'demo-pass-device',
     selectedCardIds: [],
     hasDrawnThisTurn: false,
     feedback: null,
   }
+}
+
+function endTurn(state, effect = {}) {
+  return advanceToNextTurn({ ...state, pendingSkip: state.pendingSkip || 0 }, effect)
 }
 
 // ---------- UI ----------
