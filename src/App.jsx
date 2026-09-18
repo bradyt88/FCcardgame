@@ -15,10 +15,6 @@ import {
   computePlayEffect,
   isRed,
 } from './game/engine.js'
-import { drawQuestions } from './game/questions.js'
-
-const TEAM_COLORS = { A: '#79f5ff', B: '#ff9ecb', none: '#d8c98e' }
-
 // ---------- deck / draw pile helpers ----------
 
 function drawCards(deck, discard, count) {
@@ -57,13 +53,12 @@ function nextActiveIndex(players, fromIndex, direction, extraSkips = 0) {
 const initialState = { phase: 'home' }
 
 function startNewGame(setup, dealerIndexOverride = null) {
-  const { players: rawPlayers, handSize, wrongAnswerSkipsPlay } = setup
+  const { players: rawPlayers, handSize } = setup
   const deck = shuffle(makeDeck())
   const { hands, remainingDeck } = dealHands(deck, rawPlayers.length, handSize)
   const players = rawPlayers.map((p, i) => ({
     ...p,
     hand: hands[i],
-    score: 0,
     out: false,
   }))
   // first discard: flip from the remaining deck, keep flipping if it happens
@@ -83,7 +78,7 @@ function startNewGame(setup, dealerIndexOverride = null) {
 
   return {
     phase: 'pass-device',
-    settings: { handSize, wrongAnswerSkipsPlay },
+    settings: { handSize },
     players,
     dealerIndex,
     currentPlayerIndex: dealerIndex,
@@ -92,11 +87,6 @@ function startNewGame(setup, dealerIndexOverride = null) {
     discard: [firstCard],
     requiredSuit: null,
     pendingPickup: 0,
-    askedIds: [],
-    currentQuestions: [],
-    activeQuestion: null,
-    familyDraft: null,
-    familyAnswererIndex: null,
     selectedCardIds: [],
     hasDrawnThisTurn: false,
     feedback: null,
@@ -127,67 +117,9 @@ function reducer(state, action) {
     case 'SHOW_POWER_CARDS':
       return { phase: 'power-cards' }
 
-    case 'READY_FOR_TURN': {
-      const questions = drawQuestions(state.askedIds, 4)
-      return { ...state, phase: 'quiz-select', currentQuestions: questions, feedback: null }
-    }
-
-    case 'PICK_QUESTION':
-      return { ...state, phase: 'quiz-answer', activeQuestion: action.payload }
-
-    case 'PICK_ASK_OWN':
-      return { ...state, phase: 'family-compose' }
-
-    case 'ANSWER_QUESTION': {
-      const q = state.activeQuestion
-      const correct = q.answers[action.payload].correct
-      const players = state.players.slice()
-      const p = { ...players[state.currentPlayerIndex] }
-      if (correct) p.score += 1
-      players[state.currentPlayerIndex] = p
-      return pushLog(
-        {
-          ...state,
-          players,
-          askedIds: [...state.askedIds, q.id],
-          feedback: { correct, selected: action.payload },
-        },
-        `${p.name} ${correct ? 'answered correctly (+1)' : 'answered incorrectly'}.`
-      )
-    }
-
-    case 'SUBMIT_FAMILY_QUESTION': {
-      const answererIndex = nextActiveIndex(state.players, state.currentPlayerIndex, state.direction)
-      return {
-        ...state,
-        phase: 'family-answer',
-        familyDraft: action.payload,
-        familyAnswererIndex: answererIndex,
-      }
-    }
-
-    case 'ANSWER_FAMILY_QUESTION': {
-      const draft = state.familyDraft
-      const correct = draft.correctIndex === action.payload
-      const players = state.players.slice()
-      const answerer = { ...players[state.familyAnswererIndex] }
-      if (correct) answerer.score += 1
-      players[state.familyAnswererIndex] = answerer
-      return pushLog(
-        { ...state, players, feedback: { correct, selected: action.payload, family: true } },
-        `${answerer.name} ${correct ? 'answered the family question correctly (+1)' : 'got the family question wrong'}.`
-      )
-    }
-
-    case 'CONTINUE_TO_CARDS': {
-      const wrongSkips = state.settings.wrongAnswerSkipsPlay
-      const answeredWrong = state.feedback && state.feedback.correct === false && !state.feedback.family
-      if (answeredWrong && wrongSkips) {
-        return endTurn(state, { skipAdd: 0, reverseCount: 0 })
-      }
+    case 'READY_FOR_CARDS': {
       const base = { ...state, feedback: null, selectedCardIds: [], hasDrawnThisTurn: false }
-      if (state.pendingPickup > 0) return { ...base, phase: 'pickup-response' }
-      return { ...base, phase: 'card-play' }
+      return { ...base, phase: state.pendingPickup > 0 ? 'pickup-response' : 'card-play' }
     }
 
     case 'TOGGLE_CARD': {
@@ -322,9 +254,8 @@ function reducer(state, action) {
 
     case 'PLAY_AGAIN': {
       const setup = {
-        players: state.players.map((p) => ({ id: p.id, name: p.name, team: p.team })),
+        players: state.players.map((p) => ({ id: p.id, name: p.name })),
         handSize: state.settings.handSize,
-        wrongAnswerSkipsPlay: state.settings.wrongAnswerSkipsPlay,
       }
       const nextDealer = nextActiveIndex(state.players, state.dealerIndex, -1)
       return startNewGame(setup, nextDealer)
@@ -346,7 +277,6 @@ function endTurn(state, effect) {
     phase: 'pass-device',
     selectedCardIds: [],
     hasDrawnThisTurn: false,
-    activeQuestion: null,
     feedback: null,
   }
 }
@@ -412,7 +342,7 @@ function RulesScreen({ onBack }) {
       <div className="info-card">
         <img className="info-logo" src={`${import.meta.env.BASE_URL}logo.webp`} alt="Family Circle" />
         <h1>Family Circle Rules</h1>
-        <p className="info-intro">Core rules currently represented by the supplied testing build.</p>
+        <p className="info-intro">Card-game rules reference. No quiz layer is part of this game.</p>
         <div className="info-grid">
           <div><strong>Players</strong><span>2–7 players</span></div>
           <div><strong>Cards</strong><span>Standard 52-card deck</span></div>
@@ -431,7 +361,7 @@ function PowerCardsScreen({ onBack }) {
   const cards = [
     ['Ace', 'Wild — playable any time and chooses the next suit.'],
     ['2', '+2 pickup and stacks with other 2s and Black Jacks.'],
-    ['7', 'Reverses direction. The supplied engine also allows a 7 to finish a hand.'],
+    ['7', 'Reverses direction. It cannot be the final card.'],
     ['8', 'Skips the next player and can be stacked/cancelled by another 8.'],
     ['Red Jack', 'Cancels an active pickup.'],
     ['Black Jack', '+5 pickup and stacks with 2s and other Black Jacks.'],
@@ -479,14 +409,6 @@ function GameBody({ state, dispatch }) {
   switch (state.phase) {
     case 'pass-device':
       return <PassDevice state={state} dispatch={dispatch} />
-    case 'quiz-select':
-      return <QuizSelect state={state} dispatch={dispatch} />
-    case 'quiz-answer':
-      return <QuizAnswer state={state} dispatch={dispatch} />
-    case 'family-compose':
-      return <FamilyCompose state={state} dispatch={dispatch} />
-    case 'family-answer':
-      return <FamilyAnswer state={state} dispatch={dispatch} />
     case 'pickup-response':
       return <TableView state={state} dispatch={dispatch} pickupMode />
     case 'card-play':
@@ -520,7 +442,7 @@ function PassDevice({ state, dispatch }) {
       title={`Pass to ${player.name}`}
       subtitle={player.team ? `Team ${player.team}` : 'It\u2019s your turn'}
       footer={
-        <button className="btn primary" onClick={() => dispatch({ type: 'READY_FOR_TURN' })}>
+        <button className="btn primary" onClick={() => dispatch({ type: 'READY_FOR_CARDS' })}>
           I\u2019m {player.name} \u2014 Start My Turn
         </button>
       }
@@ -531,159 +453,6 @@ function PassDevice({ state, dispatch }) {
           <div key={i} className="mini-log-line">{l}</div>
         ))}
       </div>
-    </CenterCard>
-  )
-}
-
-function QuizSelect({ state, dispatch }) {
-  const player = state.players[state.currentPlayerIndex]
-  return (
-    <CenterCard title="Choose a question" subtitle={`${player.name}, pick one of the four topics or ask your own`}>
-      <div className="question-grid">
-        {state.currentQuestions.map((q) => (
-          <button key={q.id} className="question-card" onClick={() => dispatch({ type: 'PICK_QUESTION', payload: q })}>
-            <span className="question-category">{q.category}</span>
-            <span className="question-text">{q.question}</span>
-          </button>
-        ))}
-        <button className="question-card ask-own" onClick={() => dispatch({ type: 'PICK_ASK_OWN' })}>
-          <span className="question-category">Family Question</span>
-          <span className="question-text">Ask Your Own Question</span>
-        </button>
-      </div>
-    </CenterCard>
-  )
-}
-
-function QuizAnswer({ state, dispatch }) {
-  const q = state.activeQuestion
-  const feedback = state.feedback
-  const player = state.players[state.currentPlayerIndex]
-  return (
-    <CenterCard
-      title={q.question}
-      subtitle={`${player.name} is answering \u00b7 ${q.category}`}
-      footer={
-        feedback && (
-          <button className="btn primary" onClick={() => dispatch({ type: 'CONTINUE_TO_CARDS' })}>
-            Continue to card play
-          </button>
-        )
-      }
-    >
-      <div className="answer-list">
-        {q.answers.map((a, i) => {
-          let cls = 'answer-option'
-          if (feedback) {
-            if (a.correct) cls += ' correct'
-            else if (i === feedback.selected) cls += ' incorrect'
-          }
-          return (
-            <button
-              key={i}
-              className={cls}
-              disabled={!!feedback}
-              onClick={() => dispatch({ type: 'ANSWER_QUESTION', payload: i })}
-            >
-              {a.text}
-            </button>
-          )
-        })}
-      </div>
-      {feedback && (
-        <p className={`feedback-line ${feedback.correct ? 'good' : 'bad'}`}>
-          {feedback.correct ? 'Correct! +1 point.' : 'Not quite \u2014 no point this time.'}
-        </p>
-      )}
-    </CenterCard>
-  )
-}
-
-function FamilyCompose({ state, dispatch }) {
-  const [question, setQuestion] = useState('')
-  const [answers, setAnswers] = useState(['', '', ''])
-  const [correctIndex, setCorrectIndex] = useState(0)
-  const player = state.players[state.currentPlayerIndex]
-  const nextIdx = nextActiveIndex(state.players, state.currentPlayerIndex, state.direction)
-  const answerer = state.players[nextIdx]
-  const valid = question.trim() && answers.every((a) => a.trim())
-
-  return (
-    <CenterCard
-      title="Ask Your Own Question"
-      subtitle={`${player.name} writes it \u2014 ${answerer.name} will answer`}
-      footer={
-        <button
-          className="btn primary"
-          disabled={!valid}
-          onClick={() => dispatch({ type: 'SUBMIT_FAMILY_QUESTION', payload: { question, answers, correctIndex } })}
-        >
-          Ask {answerer.name}
-        </button>
-      }
-    >
-      <label className="field-label">Your question</label>
-      <input className="text-input" value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="Type your question" />
-      {answers.map((a, i) => (
-        <div key={i} className="answer-row">
-          <input
-            type="radio"
-            name="correct"
-            checked={correctIndex === i}
-            onChange={() => setCorrectIndex(i)}
-            title="Mark as correct answer"
-          />
-          <input
-            className="text-input"
-            value={a}
-            placeholder={`Answer ${i + 1}${i === 0 ? ' (mark the correct one)' : ''}`}
-            onChange={(e) => {
-              const next = answers.slice()
-              next[i] = e.target.value
-              setAnswers(next)
-            }}
-          />
-        </div>
-      ))}
-    </CenterCard>
-  )
-}
-
-function FamilyAnswer({ state, dispatch }) {
-  const draft = state.familyDraft
-  const feedback = state.feedback
-  const answerer = state.players[state.familyAnswererIndex]
-  return (
-    <CenterCard
-      title={draft.question}
-      subtitle={`${answerer.name} is answering the family question`}
-      footer={
-        feedback && (
-          <button className="btn primary" onClick={() => dispatch({ type: 'CONTINUE_TO_CARDS' })}>
-            Continue to card play
-          </button>
-        )
-      }
-    >
-      <div className="answer-list">
-        {draft.answers.map((a, i) => {
-          let cls = 'answer-option'
-          if (feedback) {
-            if (i === draft.correctIndex) cls += ' correct'
-            else if (i === feedback.selected) cls += ' incorrect'
-          }
-          return (
-            <button key={i} className={cls} disabled={!!feedback} onClick={() => dispatch({ type: 'ANSWER_FAMILY_QUESTION', payload: i })}>
-              {a}
-            </button>
-          )
-        })}
-      </div>
-      {feedback && (
-        <p className={`feedback-line ${feedback.correct ? 'good' : 'bad'}`}>
-          {feedback.correct ? `Correct! +1 point for ${answerer.name}.` : 'Not quite \u2014 no point.'}
-        </p>
-      )}
     </CenterCard>
   )
 }
@@ -706,10 +475,11 @@ function SuitPick({ state, dispatch }) {
 
 function RoundOver({ state, dispatch }) {
   const winner = state.players.find((p) => p.id === state.winner)
-  const ranked = [...state.players].sort((a, b) => b.score - a.score)
+  const ranked = [...state.players].sort((a, b) => a.hand.length - b.hand.length)
+
   return (
     <CenterCard
-      title={`${winner.name} goes out! \ud83c\udf89`}
+      title={`${winner.name} goes out! 🎉`}
       subtitle="Round complete"
       footer={
         <button className="btn primary" onClick={() => dispatch({ type: 'PLAY_AGAIN' })}>
@@ -719,22 +489,19 @@ function RoundOver({ state, dispatch }) {
     >
       <table className="score-table">
         <thead>
-          <tr><th>Player</th><th>Cards left</th><th>Quiz score</th></tr>
+          <tr><th>Player</th><th>Cards left</th></tr>
         </thead>
         <tbody>
           {ranked.map((p) => (
             <tr key={p.id} className={p.id === winner.id ? 'winner-row' : ''}>
-              <td>{p.name}{p.team ? ` (Team ${p.team})` : ''}</td>
-              <td>{p.id === winner.id ? 0 : p.hand.length}</td>
-              <td>{p.score}</td>
+              <td>{p.name}</td>
+              <td>{p.hand.length}</td>
             </tr>
           ))}
         </tbody>
       </table>
       <p className="hint">
-        House rule note: only {winner.name} went out first is tracked as the round winner. Whether remaining
-        hand sizes should affect final scoring wasn\u2019t locked in the rule sheet \u2014 turn on \u201cScore remaining
-        cards\u201d in setup next time if your family wants that.
+        Dealer: {state.players[state.dealerIndex]?.name}. The next round moves the dealer one seat to the left.
       </p>
     </CenterCard>
   )
@@ -764,7 +531,7 @@ function TableView({ state, dispatch, pickupMode }) {
               className={`seat ${i === state.currentPlayerIndex ? 'seat-active' : ''} ${p.out ? 'seat-out' : ''}`}
               style={{ '--angle': `${p.angle}deg` }}
             >
-              <div className="seat-avatar" style={{ borderColor: TEAM_COLORS[p.team || 'none'] }}>
+              <div className="seat-avatar">
                 {p.name.slice(0, 2).toUpperCase()}
               </div>
               <div className="seat-label">{p.name}</div>
@@ -860,31 +627,14 @@ function PlayingCard({ card, selected, order, onClick, dim }) {
 function SetupScreen({ onBack, onStart }) {
   const [count, setCount] = useState(4)
   const [names, setNames] = useState(['Player 1', 'Player 2', 'Player 3', 'Player 4', 'Player 5', 'Player 6', 'Player 7'])
-  const [teamMode, setTeamMode] = useState('none') // none | 2v2 | 3v3
   const [handSize, setHandSize] = useState(7)
-  const [wrongAnswerSkipsPlay, setWrongAnswerSkipsPlay] = useState(true)
-
-  const teamOptionsDisabled = {
-    '2v2': count !== 4,
-    '3v3': count !== 6,
-  }
-
-  function buildTeams(n, mode) {
-    if (mode === 'none') return Array(n).fill(null)
-    const perTeam = mode === '2v2' ? 2 : 3
-    const teams = []
-    for (let i = 0; i < n; i++) teams.push(i % 2 === 0 ? 'A' : 'B')
-    return teams
-  }
 
   function handleStart() {
-    const teams = buildTeams(count, teamMode)
     const players = Array.from({ length: count }, (_, i) => ({
       id: `p${i}`,
       name: names[i] || `Player ${i + 1}`,
-      team: teams[i],
     }))
-    onStart({ players, handSize, wrongAnswerSkipsPlay })
+    onStart({ players, handSize })
   }
 
   return (
@@ -892,7 +642,7 @@ function SetupScreen({ onBack, onStart }) {
       <div className="setup-card">
         <img className="setup-logo" src={`${import.meta.env.BASE_URL}logo.webp`} alt="Family Circle" />
         <h1>Family Circle</h1>
-        <p className="setup-tag">Together Always \u2014 set up tonight\u2019s round</p>
+        <p className="setup-tag">Together Always — set up tonight’s game</p>
 
         <button className="text-link back-link" onClick={onBack}>← Back</button>
         <div className="setup-dealer-note">Dealer: <strong>Random</strong> — the game chooses the opening dealer automatically.</div>
@@ -916,42 +666,11 @@ function SetupScreen({ onBack, onStart }) {
           ))}
         </div>
 
-        <label className="field-label">Format</label>
-        <div className="format-row">
-          <button className={`btn ${teamMode === 'none' ? 'primary' : 'secondary'}`} onClick={() => setTeamMode('none')}>
-            Individual
-          </button>
-          <button
-            className={`btn ${teamMode === '2v2' ? 'primary' : 'secondary'}`}
-            disabled={teamOptionsDisabled['2v2']}
-            title={teamOptionsDisabled['2v2'] ? 'Needs exactly 4 players' : ''}
-            onClick={() => setTeamMode('2v2')}
-          >
-            Teams 2v2
-          </button>
-          <button
-            className={`btn ${teamMode === '3v3' ? 'primary' : 'secondary'}`}
-            disabled={teamOptionsDisabled['3v3']}
-            title={teamOptionsDisabled['3v3'] ? 'Needs exactly 6 players' : ''}
-            onClick={() => setTeamMode('3v3')}
-          >
-            Teams 3v3
-          </button>
-          <button className="btn secondary" disabled title="Needs 8 seats \u2014 the shared table currently supports 7. Flagged as an open question, see README.">
-            Teams 4v4
-          </button>
-        </div>
-
-        <details className="settings-details">
-          <summary>House-rule settings (not locked by the rule sheet \u2014 adjust freely)</summary>
+        <details className="settings-details" open>
+          <summary>Game settings</summary>
           <label className="field-label">Starting hand size ({handSize})</label>
-          <input type="range" min="4" max="10" value={handSize} onChange={(e) => setHandSize(Number(e.target.value))} />
-
-          <label className="check-row">
-            <input type="checkbox" checked={wrongAnswerSkipsPlay} onChange={(e) => setWrongAnswerSkipsPlay(e.target.checked)} />
-            A wrong quiz answer skips that player\u2019s card play this turn
-          </label>
-
+          <input type="range" min="7" max="7" value={handSize} onChange={(e) => setHandSize(Number(e.target.value))} disabled />
+          <p className="hint">Each player is dealt 7 cards. The opening dealer is selected randomly, and play starts with the dealer before moving left.</p>
         </details>
 
         <button className="btn primary big" onClick={handleStart}>START GAME</button>
