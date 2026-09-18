@@ -376,13 +376,20 @@ function reducer(state, action) {
       if (state.phase !== 'last-card-declare') return state
       const player = playerAtSeat(state.players, state.currentSeat)
       if (!player || player.id !== state.lastCardPlayerId) return state
-      return {
-        ...state,
-        phase: 'last-card-challenge',
-        lastCardDeadline: null,
-        lastCardChallengeDeadline: Date.now() + CHALLENGE_SECONDS * 1000,
-        feedback: { success: 'LAST CARD!' },
-      }
+
+      // A successful declaration ends the declaration window immediately.
+      // The challenge window is only created by LAST_CARD_TIMEOUT, i.e. when
+      // the player failed to declare Last Card in time.
+      const nextState = endTurn(
+        {
+          ...state,
+          lastCardDeadline: null,
+          lastCardChallengeDeadline: null,
+          feedback: { success: 'LAST CARD!' },
+        },
+        { reverseCount: 0 }
+      )
+      return nextState
     }
 
     case 'LAST_CARD_TIMEOUT': {
