@@ -35,6 +35,10 @@ The supplied card engine implements the Family Circle card rules, including:
 - protection against finishing on a power card
 - pass-device flow for private hands
 
+## Stage 1 — Brand & Home
+
+The Stage 1 home experience uses the supplied Family Circle hero branding and keeps the start flow deliberately focused on **PLAY A GAME**, **RULES**, and **POWER CARDS**. The later table/game UI is being rebuilt separately, stage by stage.
+
 ## Start screen
 
 The opening screen contains:
