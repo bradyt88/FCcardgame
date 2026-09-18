@@ -780,7 +780,27 @@ function TablePreview({ state, dispatch }) {
             </span>
           </div>
 
-          {state.feedback?.error && (
+          {state.phase === 'suit-pick' && (
+          <div className="suit-picker">
+            <div>
+              <strong>ACE — CHOOSE THE NEXT SUIT</strong>
+              <span>The Ace is wild. Pick the suit the next player must follow.</span>
+            </div>
+            <div className="suit-picker-buttons">
+              {['spades', 'hearts', 'diamonds', 'clubs'].map((suit) => (
+                <button
+                  key={suit}
+                  className={`btn secondary suit-choice suit-${suit}`}
+                  onClick={() => dispatch({ type: 'CHOOSE_SUIT', payload: suit })}
+                >
+                  {SUIT_SYMBOL[suit]} {suit.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {state.feedback?.error && (
             <div className="game-feedback error">{state.feedback.error}</div>
           )}
 
@@ -843,7 +863,7 @@ function TablePreview({ state, dispatch }) {
             </div>
           )}
 
-          {state.phase !== 'last-card-declare' && state.phase !== 'last-card-challenge' && (
+          {state.phase !== 'last-card-declare' && state.phase !== 'last-card-challenge' && state.phase !== 'suit-pick' && (
           <div className="table-controls">
             {state.pendingPickup > 0 ? (
               <>
