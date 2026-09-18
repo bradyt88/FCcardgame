@@ -1,8 +1,6 @@
-import { useReducer, useState, useMemo } from 'react'
+import { useReducer, useState } from 'react'
 import {
-  SUITS,
   SUIT_SYMBOL,
-  SUIT_LABEL,
   makeDeck,
   shuffle,
   dealHands,
@@ -13,7 +11,6 @@ import {
   isRedJack,
   isBlackJack,
   computePlayEffect,
-  isRed,
 } from './game/engine.js'
 // ---------- deck / draw pile helpers ----------
 
@@ -201,8 +198,6 @@ function reducer(state, action) {
       )
     }
 
-    case 'END_TURN_MANUAL':
-      return endTurn(state, { skipAdd: 0, reverseCount: 0 })
 
     case 'PLAY_SELECTED': {
       const player = state.players[state.currentPlayerIndex]
@@ -308,12 +303,7 @@ export default function App() {
     return <PowerCardsScreen onBack={() => dispatch({ type: 'GO_HOME' })} />
   }
 
-  return (
-    <div className="app-shell">
-      <TopBar state={state} />
-      <GameBody state={state} dispatch={dispatch} />
-    </div>
-  )
+  return <GameBody state={state} dispatch={dispatch} />
 }
 
 function HomeScreen({ onPlay, onRules, onPowerCards }) {
@@ -400,239 +390,40 @@ function PowerCardsScreen({ onBack }) {
   )
 }
 
-function TopBar({ state }) {
-  const player = state.players[state.currentPlayerIndex]
+function GameBody({ state }) {
+  const phaseLabel = {
+    'pass-device': 'Game table',
+    'pickup-response': 'Pickup response',
+    'card-play': 'Card play',
+    'suit-pick': 'Suit choice',
+    'round-over': 'Round complete',
+  }[state.phase] || 'Game';
+
   return (
-    <div className="topbar">
-      <div className="brand-lockup">
-        <img src={`${import.meta.env.BASE_URL}logo.webp`} alt="Family Circle" />
-        <div>
-          <div className="brand-title">FAMILY CIRCLE</div>
-          <div className="brand-subtitle">TOGETHER ALWAYS</div>
+    <div className="stage2-screen">
+      <section className="stage2-card" aria-label="Family Circle Card Game Stage 2 placeholder">
+        <img
+          className="stage2-logo"
+          src={`${import.meta.env.BASE_URL}logo.webp`}
+          alt="Family Circle — Together Always"
+        />
+        <div className="stage2-kicker">STAGE 1</div>
+        <h1>Home experience ready</h1>
+        <p>
+          The old table interface has been removed from the presentation layer.
+          The seven-seat online table will be rebuilt from the approved reference
+          in Stage 2.
+        </p>
+        <div className="stage2-note">
+          <span>Current game state</span>
+          <strong>{phaseLabel}</strong>
         </div>
-      </div>
-      <div className="stage-status">
-        <span className="status-dot" />
-        <span>{player ? `${player.name}\u2019s turn \u00b7 ${state.direction === 1 ? 'clockwise' : 'left / counter-clockwise'} \u00b7 dealer: ${state.players[state.dealerIndex]?.name || ''}` : ''}</span>
-      </div>
+        <p className="stage2-footnote">
+          The card rules engine remains in <code>src/game/engine.js</code>; this screen
+          is only a temporary stage boundary.
+        </p>
+      </section>
     </div>
-  )
-}
-
-function GameBody({ state, dispatch }) {
-  switch (state.phase) {
-    case 'pass-device':
-      return <PassDevice state={state} dispatch={dispatch} />
-    case 'pickup-response':
-      return <TableView state={state} dispatch={dispatch} pickupMode />
-    case 'card-play':
-      return <TableView state={state} dispatch={dispatch} />
-    case 'suit-pick':
-      return <SuitPick state={state} dispatch={dispatch} />
-    case 'round-over':
-      return <RoundOver state={state} dispatch={dispatch} />
-    default:
-      return null
-  }
-}
-
-function CenterCard({ children, title, subtitle, footer }) {
-  return (
-    <div className="game-screen">
-      <div className="center-card">
-        {title && <h2>{title}</h2>}
-        {subtitle && <p className="center-card-sub">{subtitle}</p>}
-        <div className="center-card-body">{children}</div>
-        {footer && <div className="center-card-footer">{footer}</div>}
-      </div>
-    </div>
-  )
-}
-
-function PassDevice({ state, dispatch }) {
-  const player = state.players[state.currentPlayerIndex]
-  return (
-    <CenterCard
-      title={`Pass to ${player.name}`}
-      subtitle="It\u2019s your turn"
-      footer={
-        <button className="btn primary" onClick={() => dispatch({ type: 'READY_FOR_CARDS' })}>
-          I\u2019m {player.name} \u2014 Start My Turn
-        </button>
-      }
-    >
-      <p className="hint">Hand the device to {player.name}. Everyone else, look away!</p>
-      <div className="mini-log">
-        {state.log.map((l, i) => (
-          <div key={i} className="mini-log-line">{l}</div>
-        ))}
-      </div>
-    </CenterCard>
-  )
-}
-
-function SuitPick({ state, dispatch }) {
-  const player = state.players[state.currentPlayerIndex]
-  return (
-    <CenterCard title="Choose the next suit" subtitle={`${player.name} played an Ace`}>
-      <div className="suit-grid">
-        {SUITS.map((s) => (
-          <button key={s} className={`suit-btn ${isRed({ suit: s }) ? 'red' : 'black'}`} onClick={() => dispatch({ type: 'CHOOSE_SUIT', payload: s })}>
-            <span className="suit-symbol">{SUIT_SYMBOL[s]}</span>
-            <span>{SUIT_LABEL[s]}</span>
-          </button>
-        ))}
-      </div>
-    </CenterCard>
-  )
-}
-
-function RoundOver({ state, dispatch }) {
-  const winner = state.players.find((p) => p.id === state.winner)
-  const ranked = [...state.players].sort((a, b) => a.hand.length - b.hand.length)
-
-  return (
-    <CenterCard
-      title={`${winner.name} goes out! 🎉`}
-      subtitle="Round complete"
-      footer={
-        <button className="btn primary" onClick={() => dispatch({ type: 'PLAY_AGAIN' })}>
-          Deal Another Round
-        </button>
-      }
-    >
-      <table className="score-table">
-        <thead>
-          <tr><th>Player</th><th>Cards left</th></tr>
-        </thead>
-        <tbody>
-          {ranked.map((p) => (
-            <tr key={p.id} className={p.id === winner.id ? 'winner-row' : ''}>
-              <td>{p.name}</td>
-              <td>{p.hand.length}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <p className="hint">
-        Dealer: {state.players[state.dealerIndex]?.name}. The next round moves the dealer one seat to the left.
-      </p>
-    </CenterCard>
-  )
-}
-
-// ---------- table / card play ----------
-
-function TableView({ state, dispatch, pickupMode }) {
-  const player = state.players[state.currentPlayerIndex]
-  const topCard = state.discard[state.discard.length - 1]
-  const feedback = state.feedback
-  const canPlay = state.selectedCardIds.length > 0
-
-  const seatOrder = useMemo(() => {
-    const n = state.players.length
-    return state.players.map((p, i) => ({ ...p, angle: (360 / n) * i }))
-  }, [state.players])
-
-  return (
-    <div className="game-screen">
-      <div className="table-felt">
-        <div className="table-surface" aria-hidden="true" />
-        <div className="seat-ring">
-          {seatOrder.map((p, i) => (
-            <div
-              key={p.id}
-              className={`seat ${i === state.currentPlayerIndex ? 'seat-active' : ''} ${p.out ? 'seat-out' : ''}`}
-              style={{ '--angle': `${p.angle}deg` }}
-            >
-              <div className="seat-avatar">
-                {p.name.slice(0, 2).toUpperCase()}
-              </div>
-              <div className="seat-label">{p.name}</div>
-              <div className="seat-count">{p.out ? 'OUT' : `${p.hand.length} cards`}</div>
-            </div>
-          ))}
-        </div>
-
-        <div className="pile-area">
-          <div className="pile draw-pile" title={`${state.deck.length} left`}>
-            <div className="mini-card-back">FC</div>
-            <span className="pile-count">{state.deck.length}</span>
-          </div>
-          <div className="pile discard-pile">
-            <PlayingCard card={topCard} />
-            {state.requiredSuit && <div className="required-suit-badge">{SUIT_SYMBOL[state.requiredSuit]} required</div>}
-          </div>
-        </div>
-
-        {state.pendingPickup > 0 && (
-          <div className="pickup-banner">Pending pickup: {state.pendingPickup} cards</div>
-        )}
-      </div>
-
-      <div className="your-hand-area">
-        <div className="hand-title">
-          {player.name}\u2019s hand {pickupMode && <span>\u2014 respond to the pickup</span>}
-        </div>
-        {feedback && feedback.error && <p className="feedback-line bad">{feedback.error}</p>}
-        <div className="hand-row">
-          {player.hand.map((c) => {
-            const eligible = !pickupMode || canCounterPickup(c) || isRedJack(c)
-            return (
-              <PlayingCard
-                key={c.id}
-                card={c}
-                dim={!eligible}
-                selected={state.selectedCardIds.includes(c.id)}
-                order={state.selectedCardIds.indexOf(c.id)}
-                onClick={eligible ? () => dispatch({ type: 'TOGGLE_CARD', payload: c.id }) : undefined}
-              />
-            )
-          })}
-        </div>
-        <div className="control-actions">
-          {pickupMode ? (
-            <>
-              <button className="btn" disabled={!canPlay} onClick={() => dispatch({ type: 'PLAY_PICKUP_RESPONSE' })}>
-                Play Selected
-              </button>
-              <button className="btn secondary" onClick={() => dispatch({ type: 'CLEAR_SELECTION' })}>Clear</button>
-              <button className="btn primary" onClick={() => dispatch({ type: 'DRAW_PICKUP' })}>
-                Pick Up {state.pendingPickup} Cards
-              </button>
-            </>
-          ) : (
-            <>
-              <button className="btn primary" disabled={!canPlay} onClick={() => dispatch({ type: 'PLAY_SELECTED' })}>
-                Play Selected
-              </button>
-              <button className="btn secondary" onClick={() => dispatch({ type: 'CLEAR_SELECTION' })}>Clear</button>
-              <button className="btn" disabled={state.hasDrawnThisTurn} onClick={() => dispatch({ type: 'DRAW_ONE' })}>
-                Draw Card
-              </button>
-              <button className="btn secondary" onClick={() => dispatch({ type: 'END_TURN_MANUAL' })}>End Turn</button>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function PlayingCard({ card, selected, order, onClick, dim }) {
-  if (!card) return <div className="card face-down" />
-  const red = isRed(card)
-  return (
-    <button
-      className={`card ${red ? 'red' : 'black'} ${selected ? 'selected' : ''} ${dim ? 'dim' : ''}`}
-      onClick={onClick}
-      disabled={!onClick}
-    >
-      {selected && order > -1 && <span className="order-badge">{order + 1}</span>}
-      <span className="card-rank top">{card.rank}</span>
-      <span className="card-suit-big">{SUIT_SYMBOL[card.suit]}</span>
-      <span className="card-rank bottom">{card.rank}</span>
-    </button>
   )
 }
 
