@@ -26,6 +26,54 @@ h1, h2, .brand-title { font-family: 'Fraunces', Georgia, serif; }
 
 button, select, input { font: inherit; }
 
+button { -webkit-tap-highlight-color: transparent; }
+
+.btn {
+  appearance: none;
+  border: 1px solid #ffffff22;
+  border-radius: 12px;
+  min-height: 44px;
+  padding: 11px 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--white);
+  background: linear-gradient(135deg, #10234a, #0a1730);
+  box-shadow: 0 8px 22px #0008, inset 0 1px 0 #ffffff10;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease, background .16s ease;
+}
+.btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  border-color: #16dfff88;
+  box-shadow: 0 10px 28px #000a, 0 0 20px #16dfff18, inset 0 1px 0 #ffffff14;
+}
+.btn:active:not(:disabled) { transform: translateY(0); }
+.btn.primary {
+  border-color: #16dfff66;
+  background: linear-gradient(135deg, #12365c, #162052 52%, #32164e);
+  box-shadow: 0 9px 26px #0009, 0 0 24px #16dfff18;
+}
+.btn.primary:hover:not(:disabled) {
+  border-color: #16dfffcc;
+  box-shadow: 0 12px 30px #000b, 0 0 30px #16dfff2b;
+}
+.btn.secondary {
+  border-color: #ffffff26;
+  background: linear-gradient(135deg, #0d1a34, #091329);
+  color: #dce8ff;
+}
+.btn.big { min-height: 50px; padding-inline: 24px; font-size: 12px; }
+.btn:focus-visible,
+.player-count-option:focus-visible,
+.text-input:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+
 
 /* ---------- home / start screen ---------- */
 .home-screen {
