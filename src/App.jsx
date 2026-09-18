@@ -74,6 +74,7 @@ function startNewGame(setup, dealerSeatOverride = null) {
     players,
     dealerSeat,
     currentSeat: dealerSeat,
+    localPlayerId: setup.localPlayerId || players[0]?.id || null,
     direction: DEFAULT_DIRECTION,
     deck: deckLeft,
     discard: [firstCard],
@@ -111,7 +112,17 @@ function reducer(state, action) {
       return { phase: 'power-cards' }
 
     case 'READY_FOR_CARDS': {
-      const base = { ...state, feedback: null, selectedCardIds: [], hasDrawnThisTurn: false }
+      const currentPlayer = playerAtSeat(state.players, state.currentSeat)
+      const demoView = state.mode === 'local-demo' && currentPlayer
+        ? { localPlayerId: currentPlayer.id }
+        : {}
+      const base = {
+        ...state,
+        ...demoView,
+        feedback: null,
+        selectedCardIds: [],
+        hasDrawnThisTurn: false,
+      }
       const phase = state.pendingPickup > 0
         ? 'pickup-response'
         : state.pendingSkip > 0
@@ -274,6 +285,7 @@ function reducer(state, action) {
         })),
         handSize: state.settings.handSize,
         mode: state.mode,
+        localPlayerId: state.localPlayerId,
       }
       const nextDealer = nextOccupiedSeat(state.players, state.dealerSeat, DEFAULT_DIRECTION)
       return startNewGame(setup, nextDealer)
@@ -473,7 +485,7 @@ function SetupScreen({ onBack, onStart }) {
       id: `p${i}`,
       name: names[i] || `Player ${i + 1}`,
     }))
-    onStart({ players, handSize, mode: 'local-demo' })
+    onStart({ players, handSize, mode: 'local-demo', localPlayerId: players[0]?.id })
   }
 
   return (
