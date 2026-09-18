@@ -436,6 +436,158 @@ button, select, input { font: inherit; }
   border-radius: 50%;
   opacity: .9;
 }
+.turn-banner {
+  width: min(760px, 100%);
+  margin: 0 auto 9px;
+  padding: 10px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #ffffff14;
+  border-radius: 12px;
+  background: #071126cc;
+  text-align: left;
+}
+.turn-kicker {
+  display: block;
+  color: var(--blue);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .18em;
+}
+.turn-banner strong {
+  display: block;
+  margin-top: 2px;
+  color: #f4f8ff;
+  font-size: 13px;
+}
+.turn-status {
+  color: #a9b7cf;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-align: right;
+}
+.hand-heading em {
+  margin-left: 2px;
+  color: var(--gold);
+  font-size: 8px;
+  font-style: normal;
+  letter-spacing: .1em;
+}
+.game-feedback {
+  width: min(760px, 100%);
+  margin: 7px auto;
+  padding: 8px 10px;
+  border-radius: 9px;
+  font-size: 10px;
+  line-height: 1.35;
+}
+.game-feedback.error {
+  border: 1px solid #ff5d7b44;
+  background: #38101caa;
+  color: #ffb7c4;
+}
+.hand-cards {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: clamp(2px, .7vw, 6px);
+  margin-top: 9px;
+  min-height: clamp(88px, 15vw, 126px);
+}
+.playing-card {
+  position: relative;
+  flex: 0 1 auto;
+  width: clamp(45px, 9vw, 70px);
+  height: clamp(68px, 13vw, 105px);
+  padding: 5px;
+  border-radius: 9px;
+  border: 1px solid #b9c9e177;
+  background: linear-gradient(145deg, #ffffff, #e9eef8);
+  color: #0d1424;
+  box-shadow: 0 7px 14px #0008;
+  cursor: pointer;
+  transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+.playing-card:hover {
+  transform: translateY(-5px);
+}
+.playing-card.suggested {
+  border-color: #16dfffcc;
+  box-shadow: 0 0 0 2px #16dfff22, 0 8px 18px #0008;
+}
+.playing-card.selected {
+  transform: translateY(-13px);
+  border-color: #ffd85ccc;
+  box-shadow: 0 0 0 2px #ffd85c33, 0 12px 24px #000b;
+}
+.card-corner {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: .9;
+  font-family: Georgia, serif;
+  font-size: 12px;
+}
+.card-corner small {
+  font-size: 11px;
+}
+.card-corner.top-left {
+  left: 6px;
+  top: 5px;
+}
+.card-corner.bottom-right {
+  right: 6px;
+  bottom: 5px;
+  transform: rotate(180deg);
+}
+.card-suit-large {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: clamp(25px, 5vw, 38px);
+}
+.suit-hearts, .suit-diamonds { color: #e73865; }
+.suit-spades, .suit-clubs { color: #111827; }
+.suggested-dot {
+  position: absolute;
+  right: 5px;
+  top: 5px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #16dfff;
+  box-shadow: 0 0 8px #16dfff;
+}
+.table-controls {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 10px auto 0;
+}
+.table-controls .btn {
+  min-width: 110px;
+  min-height: 38px;
+  font-size: 9px;
+  letter-spacing: .1em;
+}
+.table-controls .btn:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+.pile-play-pulse {
+  animation: pilePulse .45s ease-out;
+}
+@keyframes pilePulse {
+  0% { transform: scale(.94); box-shadow: 0 0 0 0 #16dfff66, 0 8px 18px #000a; }
+  100% { transform: scale(1); box-shadow: 0 0 0 9px #16dfff00, 0 8px 18px #000a; }
+}
+
 .table-demo-note {
   margin: 10px auto 0;
   width: min(560px, 100%);
@@ -484,7 +636,13 @@ button, select, input { font: inherit; }
   .seat-caption { font-size: 7px; }
   .table-wrap { width: 98vw; }
   .table-hand { margin-top: 2px; }
+  .turn-banner { padding: 8px 9px; }
+  .turn-status { max-width: 145px; }
   .hand-heading { font-size: 9px; }
+  .playing-card { width: clamp(39px, 12.5vw, 58px); height: clamp(60px, 20vw, 88px); }
+  .card-corner { font-size: 10px; }
+  .card-corner small { font-size: 9px; }
+  .table-controls .btn { min-width: 94px; padding-left: 9px; padding-right: 9px; }
   .table-demo-note { padding: 8px 10px; }
   .table-demo-note p { font-size: 9px; }
 
