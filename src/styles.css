@@ -246,17 +246,27 @@ button, select, input { font: inherit; }
   border-radius: 50%;
   border: 1px solid #ffffff0d;
 }
-.table-center-logo {
+.table-pile-tray {
   position: absolute;
   left: 50%;
-  top: 48%;
+  top: 49%;
   transform: translate(-50%, -50%);
-  width: 185px;
-  height: 185px;
-  object-fit: contain;
-  opacity: .19;
-  filter: saturate(1.05) drop-shadow(0 0 24px #16dfff18);
+  width: 220px;
+  height: 150px;
+  border: 1px solid #ffffff1c;
+  border-radius: 14px;
+  background: #02071272;
+  box-shadow: inset 0 0 35px #0008, 0 8px 28px #0005;
+  display: grid;
+  place-items: center;
   z-index: 2;
+}
+.table-tray-logo {
+  width: 118px;
+  height: 118px;
+  object-fit: contain;
+  opacity: .16;
+  filter: saturate(1.05) drop-shadow(0 0 20px #16dfff18);
 }
 .table-piles {
   position: absolute;
@@ -283,11 +293,16 @@ button, select, input { font: inherit; }
 .pile-card-back {
   display: grid;
   place-items: center;
-  color: var(--gold);
-  font-weight: 800;
-  letter-spacing: .14em;
+  overflow: hidden;
   background:
     linear-gradient(145deg, #152e5c, #07142d 55%, #142f5e);
+}
+.pile-card-back img {
+  width: 72%;
+  height: 72%;
+  object-fit: contain;
+  border-radius: 50%;
+  filter: drop-shadow(0 0 10px #16dfff22);
 }
 .pile-card-play {
   position: relative;
@@ -405,14 +420,21 @@ button, select, input { font: inherit; }
   width: clamp(40px, 8vw, 60px);
   height: clamp(58px, 11vw, 88px);
   display: grid;
-  place-items: end center;
-  padding-bottom: 6px;
+  place-items: center;
+  padding: 4px;
   border-radius: 8px;
   border: 1px solid #9fb1d655;
-  background: linear-gradient(145deg, #10244b, #07132b);
+  background:
+    linear-gradient(145deg, #10244b, #07132b);
   box-shadow: 0 5px 10px #0008;
-  color: #8ea0bf;
-  font-size: 9px;
+  overflow: hidden;
+}
+.hand-card-back img {
+  width: 74%;
+  height: 74%;
+  object-fit: contain;
+  border-radius: 50%;
+  opacity: .9;
 }
 .table-demo-note {
   margin: 10px auto 0;
@@ -452,7 +474,8 @@ button, select, input { font: inherit; }
   .table-brand-name { font-size: 13px; }
   .table-view-badge { display: none; }
   .table-brand img { width: 36px; height: 36px; }
-  .table-center-logo { width: 130px; height: 130px; }
+  .table-pile-tray { width: 190px; height: 132px; }
+  .table-tray-logo { width: 100px; height: 100px; }
   .table-piles { gap: 9px; }
   .pile-card { width: 60px; height: 84px; }
   .table-pile { min-width: 72px; }
