@@ -15,6 +15,7 @@ import {
   suggestedCardIds,
   computePlayEffect,
 } from './game/engine.js'
+import { FAMILY_CIRCLE_LOGO } from './logo.js'
 import {
   DEFAULT_DIRECTION,
   assignDemoSeats,
@@ -188,10 +189,9 @@ function reducer(state, action) {
     case 'TOGGLE_CARD': {
       const id = action.payload
       const sel = state.selectedCardIds
-      if (sel.length && sel[sel.length - 1] === id) {
-        return { ...state, selectedCardIds: sel.slice(0, -1) }
+      if (sel.includes(id)) {
+        return { ...state, selectedCardIds: sel.filter((cardId) => cardId !== id) }
       }
-      if (sel.includes(id)) return state
       return { ...state, selectedCardIds: [...sel, id] }
     }
 
@@ -522,7 +522,7 @@ export default function App() {
 }
 
 function HomeScreen({ onPlay, onRules, onPowerCards }) {
-  const logoSrc = new URL('../public/logo.webp', import.meta.url).href
+  const logoSrc = FAMILY_CIRCLE_LOGO
   return (
     <main className="home-screen">
       <div className="home-orbit orbit-one" aria-hidden="true" />
@@ -560,7 +560,7 @@ function RulesScreen({ onBack }) {
   return (
     <div className="info-screen">
       <div className="info-card">
-        <img className="info-logo" src={`${import.meta.env.BASE_URL}logo.webp`} alt="Family Circle" />
+        <img className="info-logo" src={FAMILY_CIRCLE_LOGO} alt="Family Circle" />
         <h1>Family Circle Rules</h1>
         <p className="info-intro">Card-game rules reference.</p>
         <div className="info-grid">
@@ -591,7 +591,7 @@ function PowerCardsScreen({ onBack }) {
   return (
     <div className="info-screen">
       <div className="info-card">
-        <img className="info-logo" src={`${import.meta.env.BASE_URL}logo.webp`} alt="Family Circle" />
+        <img className="info-logo" src={FAMILY_CIRCLE_LOGO} alt="Family Circle" />
         <h1>Power Cards</h1>
         <p className="info-intro">Reference for the power effects already implemented in the supplied engine.</p>
         <div className="power-list">
@@ -676,7 +676,7 @@ function TablePreview({ state, dispatch }) {
     <main className="table-preview-screen">
       <header className="table-preview-header">
         <div className="table-brand">
-          <img src={`${import.meta.env.BASE_URL}logo.webp`} alt="Family Circle" />
+          <img src={FAMILY_CIRCLE_LOGO} alt="Family Circle" />
           <div>
             <div className="table-brand-name">FAMILY CIRCLE</div>
             <div className="table-brand-sub">THE CARD GAME</div>
@@ -693,7 +693,7 @@ function TablePreview({ state, dispatch }) {
             <div className="table-pile-tray" aria-hidden="true">
               <img
                 className="table-tray-logo"
-                src={`${import.meta.env.BASE_URL}logo.webp`}
+                src={FAMILY_CIRCLE_LOGO}
                 alt=""
               />
             </div>
@@ -702,7 +702,7 @@ function TablePreview({ state, dispatch }) {
               <div className="table-pile">
                 <div className="pile-card pile-card-back">
                   <img
-                    src={`${import.meta.env.BASE_URL}logo.webp`}
+                    src={FAMILY_CIRCLE_LOGO}
                     alt=""
                     aria-hidden="true"
                   />
@@ -747,7 +747,7 @@ function TablePreview({ state, dispatch }) {
         {state.phase === 'dealing' && (
           <div className="deal-overlay" aria-live="polite">
             <div className="deal-animation-card">
-              <img src={`${import.meta.env.BASE_URL}logo.webp`} alt="" aria-hidden="true" />
+              <img src={FAMILY_CIRCLE_LOGO} alt="" aria-hidden="true" />
             </div>
             <div className="deal-overlay-title">DEALING</div>
             <div className="deal-overlay-sub">7 CARDS EACH · DEALER DEALS LEFT</div>
@@ -764,6 +764,11 @@ function TablePreview({ state, dispatch }) {
               <strong>{localPlayer?.name || 'Player'}</strong>
             </div>
             <span className="turn-status">
+              {state.phase === 'card-play' && state.turnDeadline ? (
+                <span className="turn-timer" aria-label="turn time remaining">
+                  <b>{turnSecondsLeft ?? 30}</b><small>SEC</small>
+                </span>
+              ) : null}
               {state.phase === 'dealing'
                 ? 'DEALING CARDS'
                 : state.phase === 'last-card-declare'
@@ -776,7 +781,7 @@ function TablePreview({ state, dispatch }) {
                         ? 'PLAY AN 8 OR ACCEPT SKIP'
                         : state.hasDrawnThisTurn
                           ? 'CARD DRAWN · END TURN READY'
-                          : `SELECT A CARD OR DRAW · ${turnSecondsLeft ?? 30}s`}
+                          : 'SELECT A CARD OR DRAW'}
             </span>
           </div>
 
@@ -955,7 +960,7 @@ function SetupScreen({ onBack, onStart }) {
   return (
     <div className="setup-screen">
       <div className="setup-card">
-        <img className="setup-logo" src={`${import.meta.env.BASE_URL}logo.webp`} alt="Family Circle" />
+        <img className="setup-logo" src={FAMILY_CIRCLE_LOGO} alt="Family Circle" />
         <h1>Family Circle</h1>
         <p className="setup-tag">Together Always — set up tonight’s game</p>
 
