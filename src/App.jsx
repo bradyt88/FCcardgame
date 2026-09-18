@@ -371,7 +371,7 @@ function HomeScreen({ onPlay, onRules, onPowerCards }) {
             src={`${import.meta.env.BASE_URL}logo.webp`}
             alt="Family Circle — Together Always"
           />
-          <div className="home-kicker">THE CARD GAME</div>
+          <div className="home-title">THE CARD GAME</div>
           <p className="home-copy">A private family card game for 2–7 players.</p>
         </div>
 
@@ -440,7 +440,7 @@ function PowerCardsScreen({ onBack }) {
   )
 }
 
-function GameBody({ state }) {
+function GameBody({ state, dispatch }) {
   return <TablePreview state={state} dispatch={dispatch} />
 }
 
@@ -660,14 +660,12 @@ function TablePreview({ state, dispatch }) {
 function SetupScreen({ onBack, onStart }) {
   const [count, setCount] = useState(4)
   const [names, setNames] = useState(['Player 1', 'Player 2', 'Player 3', 'Player 4', 'Player 5', 'Player 6', 'Player 7'])
-  const [handSize, setHandSize] = useState(7)
-
   function handleStart() {
     const players = Array.from({ length: count }, (_, i) => ({
       id: `p${i}`,
       name: names[i] || `Player ${i + 1}`,
     }))
-    onStart({ players, handSize, mode: 'local-demo', localPlayerId: players[0]?.id })
+    onStart({ players, handSize: 7, mode: 'local-demo', localPlayerId: players[0]?.id })
   }
 
   return (
@@ -680,8 +678,22 @@ function SetupScreen({ onBack, onStart }) {
         <button className="text-link back-link" onClick={onBack}>← Back</button>
         <div className="setup-dealer-note">Dealer: <strong>Random</strong> — the game chooses the opening dealer automatically.</div>
 
-        <label className="field-label">Number of players ({count})</label>
-        <input type="range" min="2" max="7" value={count} onChange={(e) => setCount(Number(e.target.value))} />
+        <div className="player-count-label">NUMBER OF PLAYERS <strong>{count}</strong></div>
+        <div className="player-count-options" role="group" aria-label="Number of players">
+          {[2, 3, 4, 5, 6, 7].map((number) => (
+            <button
+              key={number}
+              type="button"
+              className={`player-count-option ${count === number ? 'active' : ''}`}
+              onClick={() => setCount(number)}
+              aria-pressed={count === number}
+            >
+              {number}
+            </button>
+          ))}
+        </div>
+
+        <div className="player-names-label">PLAYER NAMES</div>
 
         <div className="name-grid">
           {Array.from({ length: count }).map((_, i) => (
@@ -701,8 +713,6 @@ function SetupScreen({ onBack, onStart }) {
 
         <details className="settings-details" open>
           <summary>Game settings</summary>
-          <label className="field-label">Starting hand size ({handSize})</label>
-          <input type="range" min="7" max="7" value={handSize} onChange={(e) => setHandSize(Number(e.target.value))} disabled />
           <p className="hint">Each player is dealt 7 cards. The opening dealer is selected randomly, and play starts with the dealer before moving left.</p>
         </details>
 
