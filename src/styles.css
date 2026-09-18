@@ -1292,7 +1292,7 @@ button { -webkit-tap-highlight-color: transparent; }
 .hidden-hand-preview { display: flex; justify-content: center; align-items: center; margin-top: 4px; min-height: 24px; }
 .mini-card-back { width: 22px; height: 32px; margin-left: -8px; border: 1px solid #16dfff88; border-radius: 4px; display: grid; place-items: center; overflow: hidden; background: linear-gradient(145deg, #102b50, #07142d 55%, #2a1649); box-shadow: 0 4px 8px #0009; }
 .mini-card-back:first-child { margin-left: 0; }
-.mini-card-back img { width: 75%; height: 75%; object-fit: contain; border-radius: 50%; }
+.mini-card-back img { width: 88%; height: 88%; object-fit: contain; border-radius: 50%; }
 @media (max-width: 720px) {
   .hand-cards { gap: 3px; padding-left: 2px; padding-right: 2px; }
   .playing-card { width: clamp(50px, 14vw, 68px); height: clamp(74px, 19vw, 98px); }
