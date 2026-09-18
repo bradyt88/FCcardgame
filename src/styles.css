@@ -37,22 +37,89 @@ button, select, input { font: inherit; }
 .app-shell { display: flex; flex-direction: column; min-height: 100vh; }
 
 /* ---------- home / start screen ---------- */
-.home-screen, .info-screen {
-  position: relative; min-height: 100vh; display: grid; place-items: center; overflow: hidden;
-  padding: 28px; background: radial-gradient(circle at 50% 28%, #15284a 0%, #07121f 34%, #030811 72%, #02040a 100%);
+.home-screen {
+  position: relative;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  padding: 26px;
+  background:
+    radial-gradient(circle at 50% 30%, #17274d 0%, #0a1226 28%, #040816 62%, #02030a 100%);
 }
-.home-orbit { position: absolute; border-radius: 50%; pointer-events: none; }
-.orbit-one { width: min(78vw, 760px); aspect-ratio: 1; border: 2px solid #16dfff66; box-shadow: 0 0 45px #16dfff33, inset 0 0 35px #16dfff18; }
-.orbit-two { width: min(88vw, 860px); aspect-ratio: 1; border: 2px solid #ff1ec855; box-shadow: 0 0 48px #ff1ec833, inset 0 0 36px #ff1ec818; }
+.home-orbit {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translateZ(0);
+}
+.orbit-one {
+  width: min(86vw, 820px);
+  aspect-ratio: 1;
+  border: 1px solid #16dfff44;
+  box-shadow: 0 0 50px #16dfff20, inset 0 0 55px #16dfff10;
+}
+.orbit-two {
+  width: min(96vw, 940px);
+  aspect-ratio: 1;
+  border: 1px solid #ff1ec844;
+  box-shadow: 0 0 58px #ff1ec820, inset 0 0 55px #ff1ec810;
+}
+.home-glow {
+  position: absolute;
+  width: 38vw;
+  max-width: 440px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: .22;
+  pointer-events: none;
+}
+.glow-pink { background: #ff1ec8; left: 4%; bottom: 8%; }
+.glow-blue { background: #16dfff; right: 4%; top: 7%; }
+
 .home-card {
-  position: relative; z-index: 2; width: min(460px, 100%); padding: 34px 30px 30px; text-align: center;
-  background: #060d1ae8; border: 1px solid #ffffff24; border-radius: 24px;
-  box-shadow: 0 28px 90px #000b, 0 0 55px #16dfff18; backdrop-filter: blur(10px);
+  position: relative;
+  z-index: 2;
+  width: min(500px, 100%);
+  padding: 28px 26px 26px;
+  text-align: center;
+  background: linear-gradient(180deg, #060d1af2 0%, #040817ee 100%);
+  border: 1px solid #ffffff20;
+  border-radius: 28px;
+  box-shadow: 0 30px 100px #000c, 0 0 70px #16dfff16;
+  backdrop-filter: blur(12px);
 }
-.home-logo { width: 190px; height: 190px; object-fit: contain; display: block; margin: 0 auto 8px; filter: drop-shadow(0 0 22px #16dfff22); }
-.home-tag { margin: 0 0 26px; color: #d8c98e; font-size: 11px; font-weight: 700; letter-spacing: .34em; }
+.home-hero { display: flex; flex-direction: column; align-items: center; }
+.home-logo {
+  width: min(330px, 76vw);
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto 8px;
+  filter: drop-shadow(0 0 28px #16dfff2b);
+}
+.home-kicker {
+  margin-top: -2px;
+  color: #d8c98e;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .34em;
+}
+.home-copy {
+  margin: 8px 0 22px;
+  color: #9fb0c8;
+  font-size: 12px;
+  line-height: 1.5;
+}
 .home-actions { display: flex; flex-direction: column; gap: 12px; }
-.home-play { height: 54px !important; font-size: 15px; letter-spacing: .12em; }
+.home-play {
+  height: 56px !important;
+  font-size: 15px;
+  letter-spacing: .14em;
+  box-shadow: 0 0 26px #16dfff22;
+}
 .home-secondary { display: flex; gap: 10px; justify-content: center; }
 .home-secondary .btn { flex: 1; }
 .info-screen { align-items: center; }
@@ -189,8 +256,9 @@ button, select, input { font: inherit; }
 .settings-details summary { cursor: pointer; color: var(--muted); font-size: 13px; }
 
 @media (max-width: 720px) {
-  .home-card { padding: 24px 18px 20px; }
-  .home-logo { width: 150px; height: 150px; }
+  .home-card { width: min(440px, 100%); padding: 22px 16px 18px; border-radius: 24px; }
+  .home-logo { width: min(270px, 74vw); }
+  .home-copy { margin-bottom: 18px; }
   .home-secondary { flex-direction: column; }
   .info-card { padding: 22px 18px; }
   .info-grid { grid-template-columns: 1fr; }
@@ -198,7 +266,6 @@ button, select, input { font: inherit; }
 }
 
 @media (max-width: 720px) {
-  .question-grid { grid-template-columns: 1fr; }
   .name-grid { grid-template-columns: 1fr; }
   :root { --card-w: 58px; --card-h: 84px; }
   .center-card { padding: 20px; }
