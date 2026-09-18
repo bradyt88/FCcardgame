@@ -767,6 +767,15 @@ function TablePreview({ state, dispatch }) {
                     <div className="seat-caption">
                       {isYou ? 'YOU · 6 O\'CLOCK' : occupied ? `${player.name} · ${player.hand.length} CARDS` : 'OPEN SEAT'}
                     </div>
+                    {occupied && !isYou && (
+                      <div className="hidden-hand-preview" aria-label={`${player.name} has ${player.hand.length} cards`}>
+                        {Array.from({ length: Math.min(player.hand.length, 5) }, (_, cardIndex) => (
+                          <div className="mini-card-back" key={cardIndex}>
+                            <img src={FAMILY_CIRCLE_LOGO} alt="" aria-hidden="true" />
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )
               })}
