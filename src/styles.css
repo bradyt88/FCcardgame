@@ -1091,3 +1091,36 @@ button { -webkit-tap-highlight-color: transparent; }
 @media (max-width: 520px) {
   .suit-picker-buttons { grid-template-columns: 1fr 1fr; }
 }
+
+
+/* ---------- Gameplay readability / selection fixes ---------- */
+.turn-status { display: flex; align-items: center; justify-content: flex-end; gap: 9px; }
+.turn-timer {
+  min-width: 58px;
+  min-height: 42px;
+  padding: 4px 8px 3px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #16dfff88;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #092744, #211642);
+  color: #16dfff;
+  box-shadow: 0 0 18px #16dfff24, inset 0 1px 0 #ffffff12;
+  line-height: .9;
+}
+.turn-timer b { font-size: 21px; font-weight: 900; letter-spacing: -.02em; }
+.turn-timer small { margin-top: 3px; font-size: 6px; font-weight: 900; letter-spacing: .18em; color: #bfefff; }
+.card-corner { font-size: 16px; font-weight: 900; }
+.card-corner small { font-size: 14px; font-weight: 900; }
+.card-suit-large { font-size: clamp(30px, 5.5vw, 43px); }
+.playing-card.suggested.selected { border-color: #ffd85c !important; }
+@media (max-width: 720px) {
+  .turn-status { gap: 6px; max-width: none; }
+  .turn-timer { min-width: 54px; min-height: 40px; }
+  .turn-timer b { font-size: 19px; }
+  .card-corner { font-size: 14px; }
+  .card-corner small { font-size: 12px; }
+  .card-suit-large { font-size: clamp(28px, 8vw, 38px); }
+}
