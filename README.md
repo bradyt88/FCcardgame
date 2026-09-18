@@ -9,22 +9,25 @@ This repository is for the **card game only**. It does not contain the separate 
 1. Open the Family Circle start screen.
 2. Select **PLAY A GAME**.
 3. Choose 2–7 players and enter their names.
-4. The opening dealer is selected randomly.
-5. The dealer starts the round.
-6. Play then moves to the left / counter-clockwise.
-7. When another round is dealt, the dealer advances one active seat to the left.
-8. Each player is dealt 7 cards.
-9. The remaining deck becomes the draw pile and the opening card becomes the play card.
-10. The physical table always has 7 equal seat positions; the local player is rendered at the 6 o'clock position on their own device.
-11. Seat assignments are fixed for the game; the visual table may rotate/reframe those fixed seats for the current player.
-12. Moving left / counter-clockwise follows the fixed seven-seat order.
+4. The opening dealer is selected randomly and marked on the table.
+5. Cards are dealt one at a time from the dealer, moving left / counter-clockwise, until every player has 7 cards.
+6. The dealer starts the round and each turn has 30 seconds.
+7. A player may play a legal card/run or choose to draw even when a legal play is available.
+8. Played cards leave the hand; cards are not automatically replaced. The objective is to reach 0 cards first.
+9. When another round is dealt, the dealer advances one active seat to the left.
+10. The remaining deck becomes the draw pile and the opening card becomes the play card.
+11. The physical table always has 7 equal seat positions; the local player is rendered at the 6 o'clock position on their own device.
+12. Seat assignments are fixed for the game; the visual table may rotate/reframe those fixed seats for the current player.
+13. Moving left / counter-clockwise follows the fixed seven-seat order.
 
 ## Card game implementation
 
 The supplied card engine implements the Family Circle card rules, including:
 
 - 52-card deck
-- 7-card hands
+- 7-card starting hands, sorted Ace through King in the local hand
+- cards are removed from the hand when played; the first player to reach 0 cards wins
+- 30-second turn timer; timeout draws one card and advances the turn
 - legal card runs
 - forward and backward run direction
 - same-rank suit changes inside runs
@@ -36,6 +39,9 @@ The supplied card engine implements the Family Circle card rules, including:
 - Black Jack +5 pickup and stacking
 - draw-pile recycling without shuffling
 - protection against finishing on a power card
+- mandatory 3-second Last Card declaration at one card, followed by a 3-second challenge window; a successful challenge adds 1 card
+- optional Last Cards announcement when the entire hand forms a connected, finishable run
+- dealer marker and animated dealing presentation
 - pass-device flow is retained only as a temporary local testing harness; the product UI is being rebuilt for online play
 
 ## Table architecture audit
