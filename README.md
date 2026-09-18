@@ -96,10 +96,10 @@ The production files are written to `dist/`.
 
 ## Publishing to GitHub Pages
 
-This project is pre-configured with `base: '/Familycirclecardgame/'` in
-`vite.config.js`, matching a GitHub repo named **Familycirclecardgame**.
+This project is pre-configured with `base: '/FCcardgame/'` in
+`vite.config.js`, matching a GitHub repo named **FCcardgame**.
 
-1. Create a GitHub repo called `Familycirclecardgame` (or rename the
+1. Create a GitHub repo called `FCcardgame` (or rename the
    `base` in `vite.config.js` to match whatever you call it) and push
    this project to it.
 2. Install the deploy helper (already in `devDependencies`):
@@ -111,7 +111,7 @@ This project is pre-configured with `base: '/Familycirclecardgame/'` in
 3. In the repo's **Settings → Pages**, set the source to the `gh-pages`
    branch (root).
 4. Your test build will be live at
-   `https://<your-username>.github.io/Familycirclecardgame/`.
+   `https://<your-username>.github.io/FCcardgame/`.
 
 If you'd rather not use the `gh-pages` branch flow, GitHub Actions'
 default "Deploy static content" workflow also works — just point it at
@@ -145,3 +145,9 @@ in the topic mix automatically.
   network multiplayer.
 - The quiz question bank is a small starter set — swap in your family's
   real question list whenever you're ready.
+
+## New start flow
+
+The opening screen is now the Family Circle home screen. **PLAY A GAME** opens the game setup, where the host selects 2–7 players and names. The opening dealer is chosen randomly when the game starts. The dealer begins the turn order, and play moves to the left (counter-clockwise). Starting another round advances the dealer one active seat to the left rather than choosing a new random dealer.
+
+The home screen also includes **RULES** and **POWER CARDS** reference screens for the rules/effects represented by this testing build.
