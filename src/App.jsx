@@ -342,7 +342,7 @@ function RulesScreen({ onBack }) {
       <div className="info-card">
         <img className="info-logo" src={`${import.meta.env.BASE_URL}logo.webp`} alt="Family Circle" />
         <h1>Family Circle Rules</h1>
-        <p className="info-intro">Card-game rules reference. No quiz layer is part of this game.</p>
+        <p className="info-intro">Card-game rules reference.</p>
         <div className="info-grid">
           <div><strong>Players</strong><span>2–7 players</span></div>
           <div><strong>Cards</strong><span>Standard 52-card deck</span></div>
@@ -440,7 +440,7 @@ function PassDevice({ state, dispatch }) {
   return (
     <CenterCard
       title={`Pass to ${player.name}`}
-      subtitle={player.team ? `Team ${player.team}` : 'It\u2019s your turn'}
+      subtitle="It\u2019s your turn"
       footer={
         <button className="btn primary" onClick={() => dispatch({ type: 'READY_FOR_CARDS' })}>
           I\u2019m {player.name} \u2014 Start My Turn
