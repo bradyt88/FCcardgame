@@ -81,17 +81,16 @@ export function canConnect(a, b) {
   return false
 }
 
-// ASSUMPTION: the rule sheet defines how cards connect to each other
-// inside a run, but does not separately spell out what makes a play
-// legal against the discard pile. The natural, consistent reading is
-// that the same connection rule governs the first card of a play against
-// the top of the pile — so playing a card is just "extending the run
-// that lives on the table". An Ace is the documented exception: it may
-// be played at any time regardless of connection.
+// A normal play matches the exposed top card by either rank OR suit.
+// Ace is the one wild card and may be played at any time.
+// When an Ace has chosen a suit, that suit becomes the required suit until
+// another Ace changes it. Pickup responses are handled separately because
+// 2 / Black Jack / Red Jack have their own counter rules.
 export function canLeadWith(card, topCard, requiredSuit) {
   if (card.rank === 'A') return true
   if (requiredSuit) return card.suit === requiredSuit
-  return canConnect(topCard, card)
+  if (!topCard) return false
+  return card.rank === topCard.rank || card.suit === topCard.suit
 }
 
 // Returns the cards the UI should initially mark as playable suggestions.
