@@ -708,7 +708,7 @@ function TablePreview({ state, dispatch }) {
               </div>
 
               <div className="table-pile">
-                <div className={`pile-card pile-card-play ${state.feedback?.success ? 'pile-play-pulse' : ''}`}>
+                <div className={`pile-card pile-card-play suit-${topCard?.suit || 'spades'} ${state.feedback?.success ? 'pile-play-pulse' : ''}`}>
                   <span>{topCard?.rank ?? 'A'}</span>
                   <small>{topCard ? SUIT_SYMBOL[topCard.suit] : '♠'}</small>
                 </div>
@@ -729,7 +729,7 @@ function TablePreview({ state, dispatch }) {
                     <div className="seat-disc">
                       <span>{isYou ? 'YOU' : occupied ? player.name.slice(0, 8) : 'OPEN'}</span>
                     </div>
-                    {isDealer && <div className="dealer-button">DEALER</div>
+                    {isDealer && <div className="dealer-button">DEALER</div>}
                     <div className="seat-caption">
                       {isYou ? 'YOU · 6 O\'CLOCK' : occupied ? `${player.name} · ${player.hand.length} CARDS` : 'OPEN SEAT'}
                     </div>
@@ -740,6 +740,19 @@ function TablePreview({ state, dispatch }) {
           </div>
         </div>
 
+        {state.phase === 'dealing' && (
+          <div className="deal-overlay" aria-live="polite">
+            <div className="deal-animation-card">
+              <img src={`${import.meta.env.BASE_URL}logo.webp`} alt="" aria-hidden="true" />
+            </div>
+            <div className="deal-overlay-title">DEALING</div>
+            <div className="deal-overlay-sub">7 CARDS EACH · DEALER DEALS LEFT</div>
+            <div className="deal-card-trail" aria-hidden="true">
+              {[0,1,2,3,4,5,6].map((i) => <span key={i} style={{'--deal-delay': (i * 0.12) + 's'}} />)}
+            </div>
+          </div>
+        )}
+
         <div className="table-hand">
           <div className="turn-banner">
             <div>
@@ -747,13 +760,19 @@ function TablePreview({ state, dispatch }) {
               <strong>{localPlayer?.name || 'Player'}</strong>
             </div>
             <span className="turn-status">
-              {state.pendingPickup > 0
-                ? `PICK UP ${state.pendingPickup} OR STACK`
-                : state.pendingSkip > 0
-                  ? 'PLAY AN 8 OR ACCEPT SKIP'
-                  : state.hasDrawnThisTurn
-                    ? 'CARD DRAWN · END TURN READY'
-                    : 'SELECT A CARD OR DRAW'}
+              {state.phase === 'dealing'
+                ? 'DEALING CARDS'
+                : state.phase === 'last-card-declare'
+                  ? `DECLARE LAST CARD · ${declarationSecondsLeft ?? 0}`
+                  : state.phase === 'last-card-challenge'
+                    ? `CHALLENGE WINDOW · ${challengeSecondsLeft ?? 0}`
+                    : state.pendingPickup > 0
+                      ? `PICK UP ${state.pendingPickup} OR STACK`
+                      : state.pendingSkip > 0
+                        ? 'PLAY AN 8 OR ACCEPT SKIP'
+                        : state.hasDrawnThisTurn
+                          ? 'CARD DRAWN · END TURN READY'
+                          : `SELECT A CARD OR DRAW · ${turnSecondsLeft ?? 30}s`}
             </span>
           </div>
 
@@ -791,6 +810,36 @@ function TablePreview({ state, dispatch }) {
             })}
           </div>
 
+          {state.phase === 'last-card-declare' && (
+            <div className="last-card-panel">
+              <div className="last-card-count">{declarationSecondsLeft ?? 0}</div>
+              <div>
+                <strong>DECLARE LAST CARD</strong>
+                <span>You have one card left. You have 3 seconds.</span>
+              </div>
+              <button className="btn primary" onClick={() => dispatch({ type: 'DECLARE_LAST_CARD' })}>LAST CARD</button>
+            </div>
+          )}
+
+          {state.phase === 'last-card-challenge' && (
+            <div className="last-card-panel challenge">
+              <div className="last-card-count">{challengeSecondsLeft ?? 0}</div>
+              <div>
+                <strong>CHALLENGE LAST CARD</strong>
+                <span>Challenge within 3 seconds if the declaration was missed.</span>
+              </div>
+              <button className="btn primary" onClick={() => dispatch({ type: 'CHALLENGE_LAST_CARD' })}>CHALLENGE</button>
+            </div>
+          )}
+
+          {wholeHandRun && (
+            <div className="last-cards-option">
+              <span>WHOLE HAND RUN · YOU CAN CLEAR YOUR HAND</span>
+              <button className="btn secondary" onClick={() => dispatch({ type: 'DECLARE_LAST_CARDS' })}>DECLARE LAST CARDS</button>
+            </div>
+          )}
+
+          {state.phase !== 'last-card-declare' && state.phase !== 'last-card-challenge' && (
           <div className="table-controls">
             {state.pendingPickup > 0 ? (
               <>
@@ -836,6 +885,7 @@ function TablePreview({ state, dispatch }) {
               </>
             )}
           </div>
+          )}
 
           <div className="table-demo-note">
             <span>{state.mode === 'online' ? 'ONLINE TABLE VIEW' : 'LOCAL DEMO VIEW'}</span>
@@ -843,6 +893,24 @@ function TablePreview({ state, dispatch }) {
           </div>
         </div>
       </section>
+
+      {state.phase === 'round-over' && (
+        <div className="winner-overlay" role="dialog" aria-modal="true">
+          <div className="confetti" aria-hidden="true">
+            {Array.from({ length: 36 }, (_, i) => <span key={i} style={{'--i': i}} />)}
+          </div>
+          <div className="winner-card">
+            <div className="winner-kicker">FAMILY CIRCLE</div>
+            <div className="winner-title">WINNER!</div>
+            <div className="winner-name">{state.players.find((p) => p.id === state.winner)?.name || 'Player'}</div>
+            <div className="winner-subtitle">WINNER WINNER CHICKEN DINNER! 🃏</div>
+            <div className="winner-actions">
+              <button className="btn primary big" onClick={() => dispatch({ type: 'PLAY_AGAIN' })}>PLAY ANOTHER GAME</button>
+              <button className="btn secondary" onClick={() => dispatch({ type: 'GO_HOME' })}>HOME</button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   )
 }
@@ -905,7 +973,7 @@ function SetupScreen({ onBack, onStart }) {
 
         <details className="settings-details" open>
           <summary>Game settings</summary>
-          <p className="hint">Each player is dealt 7 cards. The opening dealer is selected randomly, and play starts with the dealer before moving left.</p>
+          <p className="hint">Each player starts with 7 cards. The dealer is marked at the table, cards are dealt left, and each turn has 30 seconds.</p>
         </details>
 
         <button className="btn primary big" onClick={handleStart}>START GAME</button>
