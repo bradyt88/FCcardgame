@@ -564,8 +564,10 @@ function RulesScreen({ onBack }) {
         <div className="info-grid">
           <div><strong>Players</strong><span>2–7 players</span></div>
           <div><strong>Cards</strong><span>Standard 52-card deck</span></div>
-          <div><strong>Starting hand</strong><span>7 cards by default</span></div>
-          <div><strong>Turn</strong><span>Dealer starts; play then moves to the left</span></div>
+          <div><strong>Objective</strong><span>Be the first player to get rid of every card in your hand.</span></div>
+          <div><strong>Starting hand</strong><span>7 cards; cards are removed as you play them.</span></div>
+          <div><strong>Turn</strong><span>Dealer starts; play then moves left. Each turn has 30 seconds.</span></div>
+          <div><strong>Last Card</strong><span>At 1 card, declare within 3 seconds. Other players then have 3 seconds to challenge; a successful challenge adds 1 card.</span></div>
           <div><strong>Runs</strong><span>Cards connect by same suit + adjacent rank, or same rank in different suits.</span></div>
           <div><strong>Draw pile</strong><span>If exhausted, the discard pile is turned over without shuffling, keeping the top card active.</span></div>
         </div>
