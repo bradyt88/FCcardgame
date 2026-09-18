@@ -1,6 +1,6 @@
 # Family Circle — Card Game
 
-A private, pass-and-play **Family Circle card game** for 2–7 players.
+An **online-first Family Circle card game** for 2–7 players.
 
 This repository is for the **card game only**. It does not contain the separate Family Circle quiz game.
 
@@ -33,7 +33,7 @@ The supplied card engine implements the Family Circle card rules, including:
 - Black Jack +5 pickup and stacking
 - draw-pile recycling without shuffling
 - protection against finishing on a power card
-- pass-device flow for private hands
+- pass-device flow is retained only as a temporary local testing harness; the product UI is being rebuilt for online play
 
 ## Stage 1 — Brand & Home
 
