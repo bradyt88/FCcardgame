@@ -49,6 +49,8 @@ const TURN_SECONDS = 30
 const DECLARATION_SECONDS = 3
 const CHALLENGE_SECONDS = 3
 const DEAL_ANIMATION_MS = 2800
+const TURN_TRANSITION_MS = 2200
+const PLAY_CARD_STEP_MS = 430
 
 function sortHand(hand) {
   return hand.slice().sort((a, b) => {
@@ -130,6 +132,9 @@ function startNewGame(setup, dealerSeatOverride = null) {
     lastCardChallengeDeadline: null,
     lastCardPlayerId: null,
     lastCardsAnnounced: false,
+    recentPlayCards: [],
+    transitionPlayerName: null,
+    transitionStartedAt: null,
     dealStartedAt: Date.now(),
   }
 }
@@ -428,6 +433,19 @@ function reducer(state, action) {
       }
     }
 
+    case 'TURN_TRANSITION_COMPLETE': {
+      if (!state.transitionStartedAt) return state
+      const transitionDuration = Math.max(TURN_TRANSITION_MS, (state.recentPlayCards?.length || 0) * PLAY_CARD_STEP_MS + 900)
+      if (Date.now() - state.transitionStartedAt < transitionDuration) return state
+      return {
+        ...state,
+        recentPlayCards: [],
+        transitionPlayerName: null,
+        transitionStartedAt: null,
+        turnDeadline: Date.now() + TURN_SECONDS * 1000,
+      }
+    }
+
     case 'TURN_TIMEOUT': {
       if (state.phase !== 'card-play' || !state.turnDeadline || Date.now() < state.turnDeadline) return state
       const player = playerAtSeat(state.players, state.currentSeat)
@@ -470,6 +488,8 @@ function advanceToNextTurn(state, effect = {}) {
   const pendingSkip = (state.pendingSkip || 0) + (effect.skipAdd || 0)
   const nextSeat = nextOccupiedSeat(state.players, state.currentSeat, direction)
 
+  const finishingPlayer = playerAtSeat(state.players, state.currentSeat)
+  const shouldTransition = Boolean(finishingPlayer)
   return {
     ...state,
     direction,
@@ -479,11 +499,13 @@ function advanceToNextTurn(state, effect = {}) {
     selectedCardIds: [],
     hasDrawnThisTurn: false,
     feedback: null,
-    turnDeadline: Date.now() + TURN_SECONDS * 1000,
+    turnDeadline: shouldTransition ? null : Date.now() + TURN_SECONDS * 1000,
     lastCardDeadline: null,
     lastCardChallengeDeadline: null,
     lastCardPlayerId: null,
     lastCardsAnnounced: false,
+    transitionPlayerName: shouldTransition ? finishingPlayer.name : null,
+    transitionStartedAt: shouldTransition ? Date.now() : null,
   }
 }
 
@@ -641,6 +663,9 @@ function TablePreview({ state, dispatch }) {
 
       if (state.phase === 'dealing' && state.dealStartedAt && current - state.dealStartedAt >= DEAL_ANIMATION_MS) {
         dispatch({ type: 'DEAL_COMPLETE' })
+      } else if (state.transitionStartedAt) {
+        const transitionDuration = Math.max(TURN_TRANSITION_MS, (state.recentPlayCards?.length || 0) * PLAY_CARD_STEP_MS + 900)
+        if (current - state.transitionStartedAt >= transitionDuration) dispatch({ type: 'TURN_TRANSITION_COMPLETE' })
       } else if (state.phase === 'card-play' && state.turnDeadline && current >= state.turnDeadline) {
         dispatch({ type: 'TURN_TIMEOUT' })
       } else if (state.phase === 'last-card-declare' && state.lastCardDeadline && current >= state.lastCardDeadline) {
@@ -656,9 +681,14 @@ function TablePreview({ state, dispatch }) {
   const turnSecondsLeft = state.turnDeadline ? Math.max(0, Math.ceil((state.turnDeadline - now) / 1000)) : null
   const declarationSecondsLeft = state.lastCardDeadline ? Math.max(0, Math.ceil((state.lastCardDeadline - now) / 1000)) : null
   const challengeSecondsLeft = state.lastCardChallengeDeadline ? Math.max(0, Math.ceil((state.lastCardChallengeDeadline - now) / 1000)) : null
-  const wholeHandRun = localPlayer && state.phase === 'card-play'
+  const wholeHandRun = localPlayer && state.phase === 'card-play' && !state.transitionStartedAt
     ? findWholeHandRun(localPlayer.hand, topCard, state.requiredSuit)
     : null
+  const transitionElapsed = state.transitionStartedAt ? Math.max(0, now - state.transitionStartedAt) : 0
+  const transitionCardCount = state.recentPlayCards?.length
+    ? Math.min(state.recentPlayCards.length, Math.max(1, Math.floor(transitionElapsed / PLAY_CARD_STEP_MS) + 1))
+    : 0
+  const transitionMessage = transitionCardCount >= 7 ? 'WHAT A MOVE!' : transitionCardCount >= 5 ? 'GREAT TURN' : transitionCardCount >= 3 ? 'GOOD TURN' : null
 
   // Seven seats total, always. The local player is visual seat 0 at 6 o'clock.
   // The remaining six seats are evenly spaced around the circle; with seven
@@ -743,6 +773,27 @@ function TablePreview({ state, dispatch }) {
             </div>
           </div>
         </div>
+
+        {state.transitionStartedAt && (
+          <div className="turn-transition-overlay" aria-live="polite">
+            <div className="turn-transition-card"><img src={FAMILY_CIRCLE_LOGO} alt="" aria-hidden="true" /></div>
+            <div className="turn-transition-brand">FAMILY CIRCLE</div>
+            <div className="turn-transition-title">{state.transitionPlayerName || 'Player'}'S TURN FINISHED</div>
+            {state.recentPlayCards?.length > 0 && (
+              <div className="turn-play-animation">
+                {state.recentPlayCards.map((card, index) => (
+                  <div className="transition-playing-card" key={card.id} style={{ '--play-delay': (index * PLAY_CARD_STEP_MS) + 'ms' }}>
+                    <span>{card.rank}</span><small>{SUIT_SYMBOL[card.suit]}</small>
+                  </div>
+                ))}
+              </div>
+            )}
+            {transitionMessage && <div className="turn-move-counter" key={transitionCardCount}><b>{transitionCardCount} CARDS!</b><span>{transitionMessage}</span></div>}
+            <div className="turn-next-label">NEXT TURN</div>
+            <div className="turn-next-player">{viewPlayer?.name || 'Next Player'}</div>
+            <div className="turn-transition-dots"><span /><span /><span /></div>
+          </div>
+        )}
 
         {state.phase === 'dealing' && (
           <div className="deal-overlay" aria-live="polite">
