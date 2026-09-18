@@ -325,23 +325,17 @@ button, select, input { font: inherit; }
 }
 .table-seat {
   position: absolute;
-  left: 50%;
-  top: 50%;
   width: 122px;
   text-align: center;
-  transform:
-    translate(-50%, -50%)
-    rotate(calc(90deg - var(--seat-angle)))
-    translateY(calc(-1 * var(--seat-radius)))
-    rotate(calc(var(--seat-angle) - 90deg));
+  transform: translate(-50%, -50%);
 }
-.table-seat-0 { --seat-angle: 90deg; --seat-radius: 41%; }
-.table-seat-1 { --seat-angle: 38.571deg; --seat-radius: 41%; }
-.table-seat-2 { --seat-angle: -12.857deg; --seat-radius: 41%; }
-.table-seat-3 { --seat-angle: -64.286deg; --seat-radius: 41%; }
-.table-seat-4 { --seat-angle: -115.714deg; --seat-radius: 41%; }
-.table-seat-5 { --seat-angle: -167.143deg; --seat-radius: 41%; }
-.table-seat-6 { --seat-angle: -218.571deg; --seat-radius: 41%; }
+.table-seat-0 { left: 50%; top: 90%; }       /* 6 o'clock */
+.table-seat-1 { left: 18.73%; top: 74.94%; }
+.table-seat-2 { left: 11%; top: 41.1%; }
+.table-seat-3 { left: 32.64%; top: 13.96%; }
+.table-seat-4 { left: 67.36%; top: 13.96%; }
+.table-seat-5 { left: 89%; top: 41.1%; }
+.table-seat-6 { left: 81.27%; top: 74.94%; }
 
 .seat-disc {
   width: 60px;
