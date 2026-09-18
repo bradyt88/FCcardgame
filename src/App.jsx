@@ -720,6 +720,7 @@ function TablePreview({ state, dispatch }) {
               {seats.map(({ viewSeat, player }) => {
                 const isYou = viewSeat === 0
                 const occupied = Boolean(player && activeIds.has(player.id))
+                const isDealer = Boolean(player && player.seatIndex === state.dealerSeat)
                 return (
                   <div
                     className={`table-seat table-seat-${viewSeat} ${isYou ? 'you' : ''} ${occupied ? 'occupied' : 'empty'}`}
@@ -728,6 +729,7 @@ function TablePreview({ state, dispatch }) {
                     <div className="seat-disc">
                       <span>{isYou ? 'YOU' : occupied ? player.name.slice(0, 8) : 'OPEN'}</span>
                     </div>
+                    {isDealer && <div className="dealer-button">DEALER</div>
                     <div className="seat-caption">
                       {isYou ? 'YOU · 6 O\'CLOCK' : occupied ? `${player.name} · ${player.hand.length} CARDS` : 'OPEN SEAT'}
                     </div>
@@ -771,7 +773,7 @@ function TablePreview({ state, dispatch }) {
               const selected = selectedIds.has(card.id)
               return (
                 <button
-                  className={`playing-card face-card ${suggested ? 'suggested' : ''} ${selected ? 'selected' : ''}`}
+                  className={`playing-card face-card suit-${card.suit} ${suggested ? 'suggested' : ''} ${selected ? 'selected' : ''}`}
                   key={card.id}
                   onClick={() => dispatch({ type: 'TOGGLE_CARD', payload: card.id })}
                   aria-label={`${card.rank} of ${card.suit}`}
