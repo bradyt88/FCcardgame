@@ -318,21 +318,35 @@ export default function App() {
 
 function HomeScreen({ onPlay, onRules, onPowerCards }) {
   return (
-    <div className="home-screen">
-      <div className="home-orbit orbit-one" />
-      <div className="home-orbit orbit-two" />
-      <div className="home-card">
-        <img className="home-logo" src={`${import.meta.env.BASE_URL}logo.webp`} alt="Family Circle" />
-        <p className="home-tag">TOGETHER ALWAYS</p>
+    <main className="home-screen">
+      <div className="home-orbit orbit-one" aria-hidden="true" />
+      <div className="home-orbit orbit-two" aria-hidden="true" />
+      <div className="home-glow glow-pink" aria-hidden="true" />
+      <div className="home-glow glow-blue" aria-hidden="true" />
+
+      <section className="home-card" aria-label="Family Circle card game">
+        <div className="home-hero">
+          <img
+            className="home-logo"
+            src={`${import.meta.env.BASE_URL}logo.webp`}
+            alt="Family Circle — Together Always"
+          />
+          <div className="home-kicker">THE CARD GAME</div>
+          <p className="home-copy">A private family card game for 2–7 players.</p>
+        </div>
+
         <div className="home-actions">
-          <button className="btn primary big home-play" onClick={onPlay}>PLAY A GAME</button>
+          <button className="btn primary big home-play" onClick={onPlay}>
+            PLAY A GAME
+          </button>
+
           <div className="home-secondary">
             <button className="btn secondary" onClick={onRules}>RULES</button>
             <button className="btn secondary" onClick={onPowerCards}>POWER CARDS</button>
           </div>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   )
 }
 
