@@ -43,9 +43,9 @@ export function playerAtSeat(players, seatIndex) {
 
 // Maps an absolute game seat into the local player's seven-position view.
 // Whatever the player's actual game seat is, they appear at local view seat 0
-// (6 o'clock) on their own device.
+// (6 o'clock). Decreasing seat index is the visually leftward turn direction.
 export function relativeViewSeat(localSeat, absoluteSeat) {
-  return (absoluteSeat - localSeat + TABLE_SEAT_COUNT) % TABLE_SEAT_COUNT
+  return (localSeat - absoluteSeat + TABLE_SEAT_COUNT) % TABLE_SEAT_COUNT
 }
 
 export function assignDemoSeats(players) {
