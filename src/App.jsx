@@ -351,7 +351,8 @@ function reducer(state, action) {
     }
 
     case 'CHOOSE_SUIT': {
-      const withSuit = { ...state, requiredSuit: action.payload, pendingEffect: undefined }
+      const chosenSuit = action.payload
+      const withSuit = { ...state, requiredSuit: chosenSuit, pendingEffect: undefined }
       return endTurn(withSuit, state.pendingEffect || {})
     }
 
