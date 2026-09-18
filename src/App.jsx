@@ -449,7 +449,7 @@ function TablePreview({ state }) {
   const seats = Array.from({ length: 7 }, (_, viewSeat) => {
     const player = state.players.find((p) => (
       p.seatIndex === (
-        (localPlayer?.seatIndex ?? 0) + viewSeat
+        (localPlayer?.seatIndex ?? 0) - viewSeat + 7
       ) % 7
     ))
     return { viewSeat, player }
