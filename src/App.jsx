@@ -392,7 +392,7 @@ function HomeScreen({ onPlay, onRules, onPowerCards }) {
       <div className="home-orbit orbit-one" />
       <div className="home-orbit orbit-two" />
       <div className="home-card">
-        <img className="home-logo" src={${import.meta.env.BASE_URL}logo.webp} alt="Family Circle" />
+        <img className="home-logo" src={`${import.meta.env.BASE_URL}logo.webp`} alt="Family Circle" />
         <p className="home-tag">TOGETHER ALWAYS</p>
         <div className="home-actions">
           <button className="btn primary big home-play" onClick={onPlay}>PLAY A GAME</button>
@@ -410,7 +410,7 @@ function RulesScreen({ onBack }) {
   return (
     <div className="info-screen">
       <div className="info-card">
-        <img className="info-logo" src={${import.meta.env.BASE_URL}logo.webp} alt="Family Circle" />
+        <img className="info-logo" src={`${import.meta.env.BASE_URL}logo.webp`} alt="Family Circle" />
         <h1>Family Circle Rules</h1>
         <p className="info-intro">Core rules currently represented by the supplied testing build.</p>
         <div className="info-grid">
@@ -439,7 +439,7 @@ function PowerCardsScreen({ onBack }) {
   return (
     <div className="info-screen">
       <div className="info-card">
-        <img className="info-logo" src={${import.meta.env.BASE_URL}logo.webp} alt="Family Circle" />
+        <img className="info-logo" src={`${import.meta.env.BASE_URL}logo.webp`} alt="Family Circle" />
         <h1>Power Cards</h1>
         <p className="info-intro">Reference for the power effects already implemented in the supplied engine.</p>
         <div className="power-list">
