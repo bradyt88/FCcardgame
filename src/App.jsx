@@ -135,6 +135,7 @@ function startNewGame(setup, dealerSeatOverride = null) {
     recentPlayCards: [],
     transitionPlayerName: null,
     transitionStartedAt: null,
+    aceSuitChange: null,
     dealStartedAt: Date.now(),
   }
 }
@@ -357,7 +358,17 @@ function reducer(state, action) {
 
     case 'CHOOSE_SUIT': {
       const chosenSuit = action.payload
-      const withSuit = { ...state, requiredSuit: chosenSuit, pendingEffect: undefined }
+      const player = playerAtSeat(state.players, state.currentSeat)
+      const withSuit = {
+        ...state,
+        requiredSuit: chosenSuit,
+        pendingEffect: undefined,
+        aceSuitChange: {
+          playerName: player?.name || 'Player',
+          suit: chosenSuit,
+          startedAt: Date.now(),
+        },
+      }
       return endTurn(withSuit, state.pendingEffect || {})
     }
 
@@ -442,6 +453,7 @@ function reducer(state, action) {
         recentPlayCards: [],
         transitionPlayerName: null,
         transitionStartedAt: null,
+        aceSuitChange: null,
         turnDeadline: Date.now() + TURN_SECONDS * 1000,
       }
     }
@@ -720,14 +732,6 @@ function TablePreview({ state, dispatch }) {
           <div className="table-ring" aria-hidden="true" />
           <div className="table-felt">
             <div className="table-inner-ring" aria-hidden="true" />
-            <div className="table-pile-tray" aria-hidden="true">
-              <img
-                className="table-tray-logo"
-                src={FAMILY_CIRCLE_LOGO}
-                alt=""
-              />
-            </div>
-
             <div className="table-piles">
               <div className="table-pile">
                 <div className="pile-card pile-card-back">
@@ -742,7 +746,7 @@ function TablePreview({ state, dispatch }) {
               </div>
 
               <div className="table-pile">
-                <div className={`pile-card pile-card-play suit-${topCard?.suit || 'spades'} ${state.feedback?.success ? 'pile-play-pulse' : ''}`}>
+                <div className={`pile-card pile-card-play suit-${topCard?.rank === 'A' && state.requiredSuit ? state.requiredSuit : (topCard?.suit || 'spades')} ${state.feedback?.success || state.aceSuitChange ? 'pile-play-pulse' : ''}`}>
                   <span>{topCard?.rank ?? 'A'}</span>
                   <small>{topCard ? SUIT_SYMBOL[topCard.suit] : '♠'}</small>
                 </div>
@@ -787,17 +791,32 @@ function TablePreview({ state, dispatch }) {
           <div className="turn-transition-overlay" aria-live="polite">
             <div className="turn-transition-card"><img src={FAMILY_CIRCLE_LOGO} alt="" aria-hidden="true" /></div>
             <div className="turn-transition-brand">FAMILY CIRCLE</div>
-            <div className="turn-transition-title">{state.transitionPlayerName || 'Player'}'S TURN FINISHED</div>
-            {state.recentPlayCards?.length > 0 && (
+            {state.aceSuitChange ? (
+              <div className="ace-suit-change" aria-live="polite">
+                <div className="ace-change-card suit-ace">
+                  <span className="ace-change-rank">A</span>
+                  <span className={`ace-change-suit suit-${state.aceSuitChange.suit}`}>{SUIT_SYMBOL[state.aceSuitChange.suit]}</span>
+                  <span className="ace-change-arrow">↓</span>
+                  <strong>{state.aceSuitChange.suit.toUpperCase()}</strong>
+                </div>
+                <div className="ace-change-title">{state.aceSuitChange.playerName} CHANGED THE SUIT TO</div>
+                <div className={`ace-change-suit-name suit-${state.aceSuitChange.suit}`}>{SUIT_SYMBOL[state.aceSuitChange.suit]} {state.aceSuitChange.suit.toUpperCase()}</div>
+              </div>
+            ) : (
+              <>
+                <div className="turn-transition-title">{state.transitionPlayerName || 'Player'}'S TURN FINISHED</div>
+                {state.recentPlayCards?.length > 0 && (
               <div className="turn-play-animation">
                 {state.recentPlayCards.map((card, index) => (
-                  <div className="transition-playing-card" key={card.id} style={{ '--play-delay': (index * PLAY_CARD_STEP_MS) + 'ms' }}>
+                  <div className={`transition-playing-card suit-${card.suit}`} key={card.id} style={{ '--play-delay': (index * PLAY_CARD_STEP_MS) + 'ms' }}>
                     <span>{card.rank}</span><small>{SUIT_SYMBOL[card.suit]}</small>
                   </div>
                 ))}
               </div>
             )}
-            {transitionMessage && <div className="turn-move-counter" key={transitionCardCount}><b>{transitionCardCount} CARDS!</b><span>{transitionMessage}</span></div>}
+                {transitionMessage && <div className="turn-move-counter" key={transitionCardCount}><b>{transitionCardCount} CARDS!</b><span>{transitionMessage}</span></div>}
+              </>
+            )}
             <div className="turn-next-label">NEXT TURN</div>
             <div className="turn-next-player">{viewPlayer?.name || 'Next Player'}</div>
             <div className="turn-transition-dots"><span /><span /><span /></div>
