@@ -330,12 +330,12 @@ button, select, input { font: inherit; }
   transform: translate(-50%, -50%);
 }
 .table-seat-0 { left: 50%; top: 90%; }       /* 6 o'clock */
-.table-seat-1 { left: 18.73%; top: 74.94%; }
-.table-seat-2 { left: 11%; top: 41.1%; }
-.table-seat-3 { left: 32.64%; top: 13.96%; }
-.table-seat-4 { left: 67.36%; top: 13.96%; }
-.table-seat-5 { left: 89%; top: 41.1%; }
-.table-seat-6 { left: 81.27%; top: 74.94%; }
+.table-seat-1 { left: 81.27%; top: 74.94%; }
+.table-seat-2 { left: 89%; top: 41.1%; }
+.table-seat-3 { left: 67.36%; top: 13.96%; }
+.table-seat-4 { left: 32.64%; top: 13.96%; }
+.table-seat-5 { left: 11%; top: 41.1%; }
+.table-seat-6 { left: 18.73%; top: 74.94%; }
 
 .seat-disc {
   width: 60px;
