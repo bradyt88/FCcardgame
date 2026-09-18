@@ -10,8 +10,15 @@ import {
   canCounterPickup,
   isRedJack,
   isBlackJack,
+  isPowerCard,
   computePlayEffect,
 } from './game/engine.js'
+import {
+  DEFAULT_DIRECTION,
+  assignDemoSeats,
+  nextOccupiedSeat,
+  playerAtSeat,
+} from './game/table.js'
 // ---------- deck / draw pile helpers ----------
 
 function drawCards(deck, discard, count) {
@@ -31,63 +38,52 @@ function drawCards(deck, discard, count) {
   return { drawn, deck: d, discard: disc }
 }
 
-function nextActiveIndex(players, fromIndex, direction, extraSkips = 0) {
-  const n = players.length
-  let idx = fromIndex
-  let steps = 1 + extraSkips
-  let guard = 0
-  let count = 0
-  while (count < steps && guard < 100) {
-    idx = (idx + direction + n) % n
-    guard++
-    if (!players[idx].out) count++
-  }
-  return idx
-}
-
 // ---------- initial / reducer ----------
 
 const initialState = { phase: 'home' }
 
-function startNewGame(setup, dealerIndexOverride = null) {
+function startNewGame(setup, dealerSeatOverride = null) {
   const { players: rawPlayers, handSize } = setup
   const deck = shuffle(makeDeck())
   const { hands, remainingDeck } = dealHands(deck, rawPlayers.length, handSize)
-  const players = rawPlayers.map((p, i) => ({
+  const players = assignDemoSeats(rawPlayers).map((p, i) => ({
     ...p,
     hand: hands[i],
     out: false,
   }))
-  // first discard: flip from the remaining deck, keep flipping if it happens
-  // to be an Ace (so nobody starts by having to guess a wild suit).
+  // The opening play card must be a normal card, not a power card.
+  // Keep turning cards until a non-power card is exposed, then retain the
+  // displaced cards in the draw pile without shuffling them.
   let deckLeft = remainingDeck.slice()
   let firstCard = deckLeft.shift()
   const bottomBuffer = []
-  while (firstCard && firstCard.rank === 'A' && deckLeft.length > 0) {
+  while (firstCard && isPowerCard(firstCard) && deckLeft.length > 0) {
     bottomBuffer.push(firstCard)
     firstCard = deckLeft.shift()
   }
   deckLeft = [...deckLeft, ...bottomBuffer]
 
-  const dealerIndex = Number.isInteger(dealerIndexOverride)
-    ? dealerIndexOverride
-    : Math.floor(Math.random() * players.length)
+  const dealerSeat = Number.isInteger(dealerSeatOverride)
+    ? dealerSeatOverride
+    : players[Math.floor(Math.random() * players.length)].seatIndex
 
   return {
-    phase: 'pass-device',
+    phase: 'demo-pass-device',
+    mode: setup.mode || 'local-demo',
     settings: { handSize },
     players,
-    dealerIndex,
-    currentPlayerIndex: dealerIndex,
-    direction: -1,
+    dealerSeat,
+    currentSeat: dealerSeat,
+    direction: DEFAULT_DIRECTION,
     deck: deckLeft,
     discard: [firstCard],
     requiredSuit: null,
     pendingPickup: 0,
+    pendingSkip: 0,
     selectedCardIds: [],
     hasDrawnThisTurn: false,
     feedback: null,
-    log: [`New round dealt. ${players[dealerIndex].name} is the random dealer and starts. ${firstCard.rank} of ${firstCard.suit} starts the pile.`],
+    log: [`New round dealt. ${playerAtSeat(players, dealerSeat).name} is the random dealer and starts. ${firstCard.rank} of ${firstCard.suit} starts the pile.`],
     winner: null,
   }
 }
@@ -133,7 +129,7 @@ function reducer(state, action) {
       return { ...state, selectedCardIds: [] }
 
     case 'PLAY_PICKUP_RESPONSE': {
-      const player = state.players[state.currentPlayerIndex]
+      const player = playerAtSeat(state.players, state.currentSeat)
       const cards = state.selectedCardIds.map((id) => player.hand.find((c) => c.id === id))
       if (cards.length === 0) return state
 
@@ -148,8 +144,9 @@ function reducer(state, action) {
         return { ...state, feedback: { error: "You can't finish your hand on a power card — draw the pickup instead." } }
       }
 
-      const players = state.players.slice()
-      players[state.currentPlayerIndex] = { ...player, hand: newHand }
+      const players = state.players.map((p) => (
+        p.seatIndex === state.currentSeat ? { ...player, hand: newHand } : p
+      ))
       const discard = [...state.discard, ...cards]
 
       let pendingPickup = state.pendingPickup
@@ -175,10 +172,11 @@ function reducer(state, action) {
     }
 
     case 'DRAW_PICKUP': {
-      const player = state.players[state.currentPlayerIndex]
+      const player = playerAtSeat(state.players, state.currentSeat)
       const { drawn, deck, discard } = drawCards(state.deck, state.discard, state.pendingPickup)
-      const players = state.players.slice()
-      players[state.currentPlayerIndex] = { ...player, hand: [...player.hand, ...drawn] }
+      const players = state.players.map((p) => (
+        p.seatIndex === state.currentSeat ? { ...player, hand: [...player.hand, ...drawn] } : p
+      ))
       const nextState = pushLog(
         { ...state, players, deck, discard, pendingPickup: 0 },
         `${player.name} picked up ${drawn.length} card(s).`
@@ -188,7 +186,7 @@ function reducer(state, action) {
 
     case 'DRAW_ONE': {
       if (state.hasDrawnThisTurn) return state
-      const player = state.players[state.currentPlayerIndex]
+      const player = playerAtSeat(state.players, state.currentSeat)
       const { drawn, deck, discard } = drawCards(state.deck, state.discard, 1)
       const players = state.players.slice()
       players[state.currentPlayerIndex] = { ...player, hand: [...player.hand, ...drawn] }
@@ -200,7 +198,7 @@ function reducer(state, action) {
 
 
     case 'PLAY_SELECTED': {
-      const player = state.players[state.currentPlayerIndex]
+      const player = playerAtSeat(state.players, state.currentSeat)
       const cards = state.selectedCardIds.map((id) => player.hand.find((c) => c.id === id))
       if (cards.length === 0) return state
 
