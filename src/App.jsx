@@ -1,6 +1,7 @@
-import { useReducer, useState } from 'react'
+import { useEffect, useReducer, useState } from 'react'
 import {
   SUIT_SYMBOL,
+  RANKS,
   makeDeck,
   shuffle,
   dealHands,
@@ -43,13 +44,49 @@ function drawCards(deck, discard, count) {
 
 const initialState = { phase: 'home' }
 
+const TURN_SECONDS = 30
+const DECLARATION_SECONDS = 3
+const CHALLENGE_SECONDS = 3
+const DEAL_ANIMATION_MS = 2800
+
+function sortHand(hand) {
+  return hand.slice().sort((a, b) => {
+    const rankDiff = RANKS.indexOf(a.rank) - RANKS.indexOf(b.rank)
+    if (rankDiff !== 0) return rankDiff
+    return a.suit.localeCompare(b.suit)
+  })
+}
+
+function findWholeHandRun(hand, topCard, requiredSuit) {
+  if (!hand.length) return null
+  const connectForRun = (a, b) => (
+    a.rank === b.rank
+      ? a.suit !== b.suit
+      : a.suit === b.suit && Math.abs(RANKS.indexOf(a.rank) - RANKS.indexOf(b.rank)) === 1
+  )
+  const search = (remaining, path) => {
+    if (!remaining.length) return canFinishOn(path[path.length - 1]) ? path : null
+    for (let i = 0; i < remaining.length; i++) {
+      const card = remaining[i]
+      const legal = path.length === 0 ? canLeadWith(card, topCard, requiredSuit) : connectForRun(path[path.length - 1], card)
+      if (!legal) continue
+      const next = remaining.slice(0, i).concat(remaining.slice(i + 1))
+      const found = search(next, [...path, card])
+      if (found) return found
+    }
+    return null
+  }
+  return search(hand.slice(), [])
+}
+
 function startNewGame(setup, dealerSeatOverride = null) {
-  const { players: rawPlayers, handSize } = setup
+  const { players: rawPlayers } = setup
+  const handSize = 7
   const deck = shuffle(makeDeck())
   const { hands, remainingDeck } = dealHands(deck, rawPlayers.length, handSize)
   const players = assignDemoSeats(rawPlayers).map((p, i) => ({
     ...p,
-    hand: hands[i],
+    hand: sortHand(hands[i]),
     out: false,
   }))
   // The opening play card must be a normal card, not a power card.
@@ -69,7 +106,7 @@ function startNewGame(setup, dealerSeatOverride = null) {
     : players[Math.floor(Math.random() * players.length)].seatIndex
 
   return {
-    phase: 'demo-pass-device',
+    phase: 'dealing',
     mode: setup.mode || 'local-demo',
     settings: { handSize },
     players,
@@ -87,6 +124,12 @@ function startNewGame(setup, dealerSeatOverride = null) {
     feedback: null,
     log: [`New round dealt. ${playerAtSeat(players, dealerSeat).name} is the random dealer and starts. ${firstCard.rank} of ${firstCard.suit} starts the pile.`],
     winner: null,
+    turnDeadline: null,
+    lastCardDeadline: null,
+    lastCardChallengeDeadline: null,
+    lastCardPlayerId: null,
+    lastCardsAnnounced: false,
+    dealStartedAt: Date.now(),
   }
 }
 
