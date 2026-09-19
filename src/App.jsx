@@ -327,7 +327,7 @@ function reducer(state, action) {
 
       const newHand = player.hand.filter((c) => !state.selectedCardIds.includes(c.id))
       const finishing = newHand.length === 0
-      if (finishing && !canFinishOn(cards[cards.length - 1])) {
+      if (finishing && !canFinishOn(cards[cards.length - 1], state.players.filter((p) => !p.out).length)) {
         return { ...state, feedback: { error: 'You can\u2019t finish your hand on that power card.' } }
       }
 
