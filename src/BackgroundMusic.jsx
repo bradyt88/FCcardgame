@@ -1,17 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 
 const TRACKS = [
-  '/FCcardgame/audio/Soft Marimba Groove.mp3',
-  '/FCcardgame/audio/Soft Marimba Groove (1).mp3',
-  '/FCcardgame/audio/Soft Marimba Groove (2).mp3',
-  '/FCcardgame/audio/Soft Marimba Groove (3).mp3',
+  new URL('./audio/Soft Marimba Groove.mp3', import.meta.url).href,
+  new URL('./audio/Soft Marimba Groove (1).mp3', import.meta.url).href,
+  new URL('./audio/Soft Marimba Groove (2).mp3', import.meta.url).href,
+  new URL('./audio/Soft Marimba Groove (3).mp3', import.meta.url).href,
 ]
 
 export default function BackgroundMusic({ enabled = true }) {
   const audioRef = useRef(null)
   const indexRef = useRef(0)
   const [muted, setMuted] = useState(false)
-  const [blocked, setBlocked] = useState(false)
+  const [blocked, setBlocked] = useState(true)
 
   useEffect(() => {
     if (!enabled) return undefined
@@ -22,10 +22,11 @@ export default function BackgroundMusic({ enabled = true }) {
       indexRef.current = index
       audio.src = TRACKS[index]
       audio.volume = 0.22
-      audio.muted = muted
+      audio.muted = false
       audio.load()
       try {
         await audio.play()
+        setMuted(false)
         setBlocked(false)
       } catch {
         setBlocked(true)
@@ -55,11 +56,21 @@ export default function BackgroundMusic({ enabled = true }) {
     const audio = audioRef.current
     if (!audio) return
     try {
+      if (!audio.src) {
+        audio.src = TRACKS[indexRef.current]
+        audio.volume = 0.22
+        audio.load()
+      }
       await audio.play()
       setBlocked(false)
+      setMuted(false)
     } catch {
       setBlocked(true)
     }
+  }
+
+  const toggleMute = () => {
+    setMuted((value) => !value)
   }
 
   if (!enabled) return null
@@ -68,13 +79,21 @@ export default function BackgroundMusic({ enabled = true }) {
     <>
       <audio ref={audioRef} preload="auto" aria-hidden="true" />
       <div className="music-control">
-        {blocked && (
-          <button className="music-control-button" onClick={resume}>
+        {blocked ? (
+          <button
+            className="music-control-button"
+            onClick={resume}
+            aria-label="Play background music"
+          >
             ▶ MUSIC
           </button>
-        )}
-        {!blocked && (
-          <button className="music-control-button" onClick={() => setMuted((value) => !value)}>
+        ) : (
+          <button
+            className="music-control-button"
+            onClick={toggleMute}
+            aria-label={muted ? 'Unmute background music' : 'Mute background music'}
+            aria-pressed={muted}
+          >
             {muted ? '🔇 MUSIC' : '♫ MUSIC'}
           </button>
         )}
