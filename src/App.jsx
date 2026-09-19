@@ -271,6 +271,20 @@ function reducer(state, action) {
 
       const nextState = pushLog({ ...state, players, discard, pendingPickup, requiredSuit: null, recentPlayCards: cards, pickupAnimation: pendingPickup > 0 ? { amount: pendingPickup, kind: 'pickup' } : null }, logLine)
       if (newHand.length === 1) {
+        // If the played card is an Ace, the player must choose the next suit
+        // before declaring Last Card. The three-second Last Card window starts
+        // only after the suit has been chosen.
+        if (effect.needsSuitChoice) {
+          return {
+            ...nextState,
+            phase: 'suit-pick-last-card',
+            lastCardPlayerId: player.id,
+            lastCardDeadline: null,
+            lastCardChallengeDeadline: null,
+            pendingEffect: effect,
+            turnDeadline: null,
+          }
+        }
         return {
           ...nextState,
           phase: 'last-card-declare',
@@ -371,6 +385,26 @@ function reducer(state, action) {
     case 'CHOOSE_SUIT': {
       const chosenSuit = action.payload
       const player = playerAtSeat(state.players, state.currentSeat)
+
+      if (state.phase === 'suit-pick-last-card') {
+        return {
+          ...state,
+          requiredSuit: chosenSuit,
+          pendingEffect: undefined,
+          aceSuitChange: {
+            playerName: player?.name || 'Player',
+            suit: chosenSuit,
+            startedAt: Date.now(),
+          },
+          phase: 'last-card-declare',
+          lastCardDeadline: Date.now() + DECLARATION_SECONDS * 1000,
+          lastCardChallengeDeadline: null,
+          lastCardPlayerId: player?.id || state.lastCardPlayerId,
+          turnDeadline: null,
+          feedback: { success: 'SUIT CHANGED — DECLARE LAST CARD' },
+        }
+      }
+
       const withSuit = {
         ...state,
         requiredSuit: chosenSuit,
@@ -904,7 +938,7 @@ function TablePreview({ state, dispatch }) {
             </span>
           </div>
 
-          {state.phase === 'suit-pick' && (
+          {(state.phase === 'suit-pick' || state.phase === 'suit-pick-last-card') && (
           <div className="suit-picker">
             <div>
               <strong>ACE — CHOOSE THE NEXT SUIT</strong>
@@ -987,7 +1021,7 @@ function TablePreview({ state, dispatch }) {
             </div>
           )}
 
-          {state.phase !== 'last-card-declare' && state.phase !== 'last-card-challenge' && state.phase !== 'suit-pick' && (
+          {state.phase !== 'last-card-declare' && state.phase !== 'last-card-challenge' && state.phase !== 'suit-pick' && state.phase !== 'suit-pick-last-card' && (
           <div className="table-controls">
             {state.pendingPickup > 0 ? (
               <>
