@@ -29,18 +29,18 @@ export function isRedJack(card) {
 }
 
 // Power classification, straight from the Card & Power Reference sheet.
-export function cardPower(card) {
+export function cardPower(card, activePlayerCount = 3) {
   if (card.rank === 'A') return 'ace'
   if (card.rank === '2') return 'two'
-  if (card.rank === '7') return 'seven'
+  if (card.rank === '7' && activePlayerCount !== 2) return 'seven'
   if (card.rank === '8') return 'eight'
   if (isRedJack(card)) return 'redjack'
   if (isBlackJack(card)) return 'blackjack'
   return null // 3,4,5,6,9,10,Q,K are NORMAL
 }
 
-export function isPowerCard(card) {
-  return cardPower(card) !== null
+export function isPowerCard(card, activePlayerCount = 3) {
+  return cardPower(card, activePlayerCount) !== null
 }
 
 export function makeDeck() {
@@ -129,10 +129,10 @@ export function validateRunChain(cards) {
 // play on a power card, EXCEPT a 7 (explicitly carved out as able to
 // finish). A Black Jack exposed as the final card keeps its power and
 // so also cannot be a finishing card.
-export function canFinishOn(card) {
-  const power = cardPower(card)
+export function canFinishOn(card, activePlayerCount = 3) {
+  const power = cardPower(card, activePlayerCount)
   if (power === null) return true
-  if (power === 'seven') return true
+  if (card?.rank === '7' && activePlayerCount === 2) return true
   return false
 }
 
@@ -161,9 +161,9 @@ function trailingSameRankCount(cards) {
 // state-ish object of { pendingPickup, direction, pendingSkip, requiredSuit }.
 // Returns a new object with the effect applied, plus a `chosenSuit`
 // placeholder flag if the caller must still prompt for a suit (Ace).
-export function computePlayEffect(playedCards) {
+export function computePlayEffect(playedCards, activePlayerCount = 3) {
   const finalCard = playedCards[playedCards.length - 1]
-  const power = cardPower(finalCard)
+  const power = cardPower(finalCard, activePlayerCount)
   const stack = trailingSameRankCount(playedCards)
 
   const effect = {
@@ -198,13 +198,12 @@ export function canCounterPickup(card) {
   return card.rank === '2' || isBlackJack(card)
 }
 
-export function dealHands(deck, numPlayers, handSize) {
+export function dealHands(deck, numPlayers, handSize, dealOrder = null) {
   const hands = Array.from({ length: numPlayers }, () => [])
+  const order = Array.isArray(dealOrder) ? dealOrder.slice() : Array.from({ length: numPlayers }, (_, index) => index)
   let d = deck.slice()
   for (let r = 0; r < handSize; r++) {
-    for (let p = 0; p < numPlayers; p++) {
-      hands[p].push(d.shift())
-    }
+    for (const playerIndex of order) hands[playerIndex].push(d.shift())
   }
   return { hands, remainingDeck: d }
 }
