@@ -148,6 +148,7 @@ function startNewGame(setup, dealerSeatOverride = null) {
     transitionStartedAt: null,
     aceSuitChange: null,
     pickupAnimation: null,
+    gameEvent: null,
     dealStartedAt: Date.now(),
   }
 }
@@ -441,6 +442,12 @@ function reducer(state, action) {
           lastCardDeadline: null,
           lastCardChallengeDeadline: null,
           feedback: { success: 'LAST CARD!' },
+          gameEvent: {
+            kind: 'last-card',
+            title: 'LAST CARD!',
+            main: player.name + ' CALLED LAST CARD',
+            detail: 'EVERYONE — WATCH THE TABLE',
+          },
         },
         { reverseCount: 0 }
       )
@@ -517,6 +524,7 @@ function reducer(state, action) {
         transitionStartedAt: null,
         aceSuitChange: null,
         pickupAnimation: null,
+        gameEvent: null,
         turnDeadline: Date.now() + TURN_SECONDS * 1000,
       }
     }
@@ -565,11 +573,54 @@ function advanceToNextTurn(state, effect = {}) {
   const nextSeat = nextOccupiedSeat(state.players, state.currentSeat, direction)
 
   const finishingPlayer = playerAtSeat(state.players, state.currentSeat)
+  const nextPlayer = playerAtSeat(state.players, nextSeat)
+  const playedCard = state.recentPlayCards?.[state.recentPlayCards.length - 1]
+  let gameEvent = state.gameEvent || null
+
+  if (playedCard?.rank === '7' && effect.reverseCount % 2 === 1) {
+    gameEvent = {
+      kind: 'reverse',
+      title: 'ORDER REVERSED',
+      main: (finishingPlayer?.name || 'Player') + ' PLAYS 7',
+      detail: 'TURN DIRECTION CHANGED · NEXT: ' + (nextPlayer?.name || 'PLAYER'),
+    }
+  } else if (playedCard?.rank === '8' && effect.skipAdd) {
+    gameEvent = {
+      kind: 'skip',
+      title: 'PLAYER SKIPPED',
+      main: (finishingPlayer?.name || 'Player') + ' PLAYS 8',
+      detail: (nextPlayer?.name || 'PLAYER') + "'S TURN IS SKIPPED",
+    }
+  } else if (effect.pickupAdd) {
+    const pickupAmount = (state.pendingPickup || 0) + effect.pickupAdd
+    gameEvent = {
+      kind: 'pickup',
+      title: 'PICK UP ' + pickupAmount,
+      main: (finishingPlayer?.name || 'Player') + ' PLAYS ' + (playedCard?.rank || 'POWER CARD'),
+      detail: 'NEXT: ' + (nextPlayer?.name || 'PLAYER'),
+    }
+  } else if (effect.cancelPickup) {
+    gameEvent = {
+      kind: 'cancel',
+      title: 'PICKUP CANCELLED',
+      main: (finishingPlayer?.name || 'Player') + ' PLAYS RED JACK',
+      detail: 'NEXT: ' + (nextPlayer?.name || 'PLAYER'),
+    }
+  } else if (effect.needsSuitChoice) {
+    gameEvent = {
+      kind: 'ace',
+      title: 'ACE — CHOOSE A SUIT',
+      main: (finishingPlayer?.name || 'Player') + ' PLAYS ACE',
+      detail: 'THE NEXT SUIT WILL BE CHOSEN',
+    }
+  }
+
   const shouldTransition = Boolean(finishingPlayer)
   return {
     ...state,
     direction,
     currentSeat: nextSeat,
+    gameEvent,
     pendingSkip,
     phase: pendingSkip > 0 ? 'skip-response' : 'card-play',
     selectedCardIds: [],
@@ -753,6 +804,52 @@ function GameBody({ state, dispatch }) {
   )
 }
 
+function GameEventBanner({ event }) {
+  useEffect(() => {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext
+      if (!AudioContext) return
+      const ctx = new AudioContext()
+      const now = ctx.currentTime
+      const notes = event.kind === 'reverse'
+        ? [440, 660, 880]
+        : event.kind === 'last-card'
+          ? [660, 880]
+          : event.kind === 'skip'
+            ? [520, 360]
+            : event.kind === 'pickup'
+              ? [220, 165]
+              : [520, 700]
+      notes.forEach((frequency, index) => {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.type = 'sine'
+        osc.frequency.value = frequency
+        gain.gain.setValueAtTime(0.0001, now + index * 0.09)
+        gain.gain.exponentialRampToValueAtTime(0.07, now + index * 0.09 + 0.015)
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + index * 0.09 + 0.18)
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+        osc.start(now + index * 0.09)
+        osc.stop(now + index * 0.09 + 0.2)
+      })
+      window.setTimeout(() => ctx.close().catch(() => {}), 700)
+    } catch {
+      // Audio is enhancement only; visual feedback remains fully usable.
+    }
+  }, [event])
+
+  return (
+    <div className={"game-event-banner game-event-" + event.kind}>
+      <div className="game-event-flash" aria-hidden="true" />
+      <div className="game-event-kicker">GAME ALERT</div>
+      <div className="game-event-title">{event.title}</div>
+      <div className="game-event-main">{event.main}</div>
+      <div className="game-event-detail">{event.detail}</div>
+    </div>
+  )
+}
+
 function TablePreview({ state, dispatch }) {
   const viewPlayer = playerAtSeat(state.players, state.currentSeat)
   const localPlayer = state.mode === 'online'
@@ -896,6 +993,7 @@ function TablePreview({ state, dispatch }) {
 
         {state.transitionStartedAt && (
           <div className="turn-transition-overlay" aria-live="polite">
+            {state.gameEvent && <GameEventBanner event={state.gameEvent} />}
             <div className="turn-transition-card"><img src={FAMILY_CIRCLE_LOGO} alt="" aria-hidden="true" /></div>
             <div className="turn-transition-brand">FAMILY CIRCLE</div>
             {state.pickupAnimation ? (
