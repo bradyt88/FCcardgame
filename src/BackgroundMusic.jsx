@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 
 const TRACKS = [
-  new URL('./audio/Soft Marimba Groove.mp3', import.meta.url).href,
-  new URL('./audio/Soft Marimba Groove (1).mp3', import.meta.url).href,
-  new URL('./audio/Soft Marimba Groove (2).mp3', import.meta.url).href,
-  new URL('./audio/Soft Marimba Groove (3).mp3', import.meta.url).href,
+  '/FCcardgame/audio/Soft Marimba Groove.mp3',
+  '/FCcardgame/audio/Soft Marimba Groove (1).mp3',
+  '/FCcardgame/audio/Soft Marimba Groove (2).mp3',
+  '/FCcardgame/audio/Soft Marimba Groove (3).mp3',
 ]
 
 export default function BackgroundMusic({ enabled = true }) {
