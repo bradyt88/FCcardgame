@@ -138,7 +138,9 @@ button { -webkit-tap-highlight-color: transparent; }
   object-fit: contain;
   display: block;
   margin: 0 auto 8px;
-  filter: drop-shadow(0 0 28px #16dfff2b);
+  filter: none;
+  image-rendering: auto;
+  backface-visibility: hidden;
 }
 .home-title {
   margin-top: 2px;
