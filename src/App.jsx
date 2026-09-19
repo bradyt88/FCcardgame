@@ -620,6 +620,14 @@ function HomeScreen({ onPlay, onRules, onPowerCards }) {
       <div className="home-glow glow-blue" aria-hidden="true" />
 
       <section className="home-card" aria-label="Family Circle card game">
+        <svg className="home-logo-filters" width="0" height="0" aria-hidden="true">
+          <defs>
+            <filter id="home-logo-sharpen" x="-10%" y="-10%" width="120%" height="120%">
+              <feConvolveMatrix order="3" preserveAlpha="true" kernelMatrix="0 -1 0 -1 5 -1 0 -1 0" />
+            </filter>
+          </defs>
+        </svg>
+
         <div className="home-hero">
           <img
             className="home-logo"
@@ -632,12 +640,19 @@ function HomeScreen({ onPlay, onRules, onPowerCards }) {
 
         <div className="home-actions">
           <button className="btn primary big home-play" onClick={onPlay}>
-            PLAY A GAME
+            <span className="home-button-icon" aria-hidden="true">▶</span>
+            <span>PLAY A GAME</span>
           </button>
 
           <div className="home-secondary">
-            <button className="btn secondary" onClick={onRules}>RULES</button>
-            <button className="btn secondary" onClick={onPowerCards}>POWER CARDS</button>
+            <button className="btn secondary home-secondary-button" onClick={onRules}>
+              <span className="home-button-icon" aria-hidden="true">▣</span>
+              <span>RULES</span>
+            </button>
+            <button className="btn secondary home-secondary-button" onClick={onPowerCards}>
+              <span className="home-button-icon" aria-hidden="true">▱</span>
+              <span>POWER CARDS</span>
+            </button>
           </div>
         </div>
       </section>
