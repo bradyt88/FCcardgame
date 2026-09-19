@@ -1042,8 +1042,8 @@ button { -webkit-tap-highlight-color: transparent; }
   height: var(--confetti-size);
 }
 .confetti-wide {
-  width: calc(var(--confetti-size) * 1.8);
-  height: calc(var(--confetti-size) * .8);
+  width: 14px;
+  height: 6px;
 }
 @keyframes winnerPop {
   0% { opacity: 0; transform: scale(.82) translateY(20px); }
