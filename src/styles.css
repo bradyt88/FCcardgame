@@ -1738,3 +1738,129 @@ button { -webkit-tap-highlight-color: transparent; }
   .lobby-choice-icon { margin-bottom: 12px; }
   .lobby-logo { width: 78px; height: 78px; }
 }
+
+
+/* ---------- High-visibility game event alerts ---------- */
+.game-event-banner {
+  position: relative;
+  width: min(430px, 92vw);
+  margin: 0 auto 8px;
+  padding: 13px 18px 15px;
+  overflow: hidden;
+  text-align: center;
+  border: 1px solid #16dfff99;
+  border-radius: 18px;
+  background: linear-gradient(145deg, #071a35f5, #25133ff2);
+  box-shadow: 0 0 32px #16dfff25, 0 18px 50px #000b, inset 0 1px 0 #ffffff18;
+  animation: gameEventIn .42s cubic-bezier(.2,.9,.25,1.2) both;
+}
+.game-event-flash {
+  position: absolute;
+  inset: -30%;
+  background: radial-gradient(circle, #16dfff3d 0%, transparent 52%);
+  animation: gameEventFlash .8s ease-out both;
+  pointer-events: none;
+}
+.game-event-kicker,
+.game-event-title,
+.game-event-main,
+.game-event-detail { position: relative; z-index: 1; }
+.game-event-kicker {
+  color: #16dfff;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: .25em;
+}
+.game-event-title {
+  margin-top: 3px;
+  color: #fff;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: clamp(27px, 7vw, 42px);
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: .06em;
+  text-shadow: 0 0 24px #16dfff55;
+  animation: gameEventTitle .55s .05s cubic-bezier(.2,.9,.25,1.2) both;
+}
+.game-event-main {
+  margin-top: 8px;
+  color: #f8fbff;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .09em;
+}
+.game-event-detail {
+  margin-top: 5px;
+  color: #ffd85c;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .12em;
+}
+.game-event-reverse {
+  border-color: #ff1ec8aa;
+  box-shadow: 0 0 42px #ff1ec83d, 0 18px 55px #000b, inset 0 1px 0 #ffffff18;
+}
+.game-event-reverse .game-event-flash {
+  background: radial-gradient(circle, #ff1ec84d 0%, transparent 54%);
+  animation: reverseFlash .9s ease-out both;
+}
+.game-event-reverse .game-event-title { color: #ff75df; text-shadow: 0 0 28px #ff1ec86e; }
+.game-event-skip { border-color: #9b4dffaa; }
+.game-event-skip .game-event-flash { background: radial-gradient(circle, #9b4dff48 0%, transparent 54%); }
+.game-event-skip .game-event-title { color: #c59cff; text-shadow: 0 0 26px #9b4dff66; }
+.game-event-pickup { border-color: #ffd85caa; }
+.game-event-pickup .game-event-flash { background: radial-gradient(circle, #ffd85c42 0%, transparent 54%); }
+.game-event-pickup .game-event-title { color: #ffd85c; text-shadow: 0 0 26px #ffd85c66; }
+.game-event-cancel { border-color: #16dfffaa; }
+.game-event-ace { border-color: #16dfffaa; }
+.game-event-last-card {
+  border-color: #ff5bd7cc;
+  box-shadow: 0 0 50px #ff1ec846, 0 18px 55px #000b, inset 0 1px 0 #ffffff18;
+}
+.game-event-last-card .game-event-flash {
+  background: radial-gradient(circle, #ff1ec850 0%, transparent 55%);
+  animation: lastCardFlash .9s ease-out both;
+}
+.game-event-last-card .game-event-title { color: #ff8ae6; text-shadow: 0 0 30px #ff1ec877; }
+@keyframes gameEventIn {
+  0% { opacity: 0; transform: translateY(-18px) scale(.78); filter: blur(5px); }
+  60% { opacity: 1; transform: translateY(3px) scale(1.035); filter: blur(0); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes gameEventFlash {
+  0% { opacity: 0; transform: scale(.55); }
+  25% { opacity: 1; transform: scale(1.05); }
+  100% { opacity: .15; transform: scale(1.25); }
+}
+@keyframes gameEventTitle {
+  0% { opacity: 0; transform: scale(.7); letter-spacing: .18em; }
+  60% { opacity: 1; transform: scale(1.06); }
+  100% { opacity: 1; transform: scale(1); letter-spacing: .06em; }
+}
+@keyframes reverseFlash {
+  0% { opacity: 0; transform: rotate(0deg) scale(.5); }
+  35% { opacity: 1; transform: rotate(180deg) scale(1.1); }
+  100% { opacity: .12; transform: rotate(360deg) scale(1.3); }
+}
+@keyframes lastCardFlash {
+  0%, 100% { opacity: .05; }
+  18% { opacity: 1; }
+  36% { opacity: .12; }
+  54% { opacity: .85; }
+  72% { opacity: .1; }
+}
+@media (max-width: 720px) {
+  .game-event-banner {
+    width: min(390px, 94vw);
+    padding: 12px 14px 14px;
+    border-radius: 16px;
+  }
+  .game-event-title { font-size: clamp(25px, 8vw, 36px); }
+  .game-event-main { font-size: 11px; }
+  .game-event-detail { font-size: 9px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .game-event-banner,
+  .game-event-flash,
+  .game-event-title { animation: none; }
+}
