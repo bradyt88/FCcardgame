@@ -1058,13 +1058,15 @@ function TablePreview({ state, dispatch }) {
                   key={i}
                   className={i % 5 === 0 ? 'confetti-piece confetti-wide' : 'confetti-piece'}
                   style={{
-                    '--confetti-x': x,
-                    '--confetti-y': y,
+                    '--confetti-x': x + '%',
+                    '--confetti-y': y + 'vh',
                     '--confetti-delay': delay + 's',
                     '--confetti-duration': duration + 's',
                     '--confetti-drift': drift + 'px',
+                    '--confetti-drift-end': (drift * -0.35) + 'px',
                     '--confetti-rotate': rotate + 'deg',
                     '--confetti-size': size + 'px',
+                    '--confetti-height': (size * 1.85) + 'px',
                   }}
                 />
               )
