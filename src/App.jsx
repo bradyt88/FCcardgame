@@ -60,7 +60,7 @@ function sortHand(hand) {
   })
 }
 
-function findWholeHandRun(hand, topCard, requiredSuit) {
+function findWholeHandRun(hand, topCard, requiredSuit, activePlayerCount = 3) {
   if (!hand.length) return null
   const connectForRun = (a, b) => (
     a.rank === b.rank
@@ -68,7 +68,7 @@ function findWholeHandRun(hand, topCard, requiredSuit) {
       : a.suit === b.suit && Math.abs(RANKS.indexOf(a.rank) - RANKS.indexOf(b.rank)) === 1
   )
   const search = (remaining, path) => {
-    if (!remaining.length) return canFinishOn(path[path.length - 1]) ? path : null
+    if (!remaining.length) return canFinishOn(path[path.length - 1], activePlayerCount) ? path : null
     for (let i = 0; i < remaining.length; i++) {
       const card = remaining[i]
       const legal = path.length === 0 ? canLeadWith(card, topCard, requiredSuit) : connectForRun(path[path.length - 1], card)
@@ -85,9 +85,22 @@ function findWholeHandRun(hand, topCard, requiredSuit) {
 function startNewGame(setup, dealerSeatOverride = null) {
   const { players: rawPlayers } = setup
   const handSize = 7
+  const playersWithoutHands = assignDemoSeats(rawPlayers)
+  const dealerSeat = Number.isInteger(dealerSeatOverride)
+    ? dealerSeatOverride
+    : playersWithoutHands[Math.floor(Math.random() * playersWithoutHands.length)].seatIndex
+
+  // The dealer is established first, then shuffles the full pack and deals
+  // one card at a time starting with themselves and moving left.
   const deck = shuffle(makeDeck())
-  const { hands, remainingDeck } = dealHands(deck, rawPlayers.length, handSize)
-  const players = assignDemoSeats(rawPlayers).map((p, i) => ({
+  const dealOrder = playersWithoutHands
+    .map((p, index) => ({ index, seatIndex: p.seatIndex }))
+    .sort((x, y) => (
+      ((dealerSeat - x.seatIndex + 7) % 7) - ((dealerSeat - y.seatIndex + 7) % 7)
+    ))
+    .map(({ index }) => index)
+  const { hands, remainingDeck } = dealHands(deck, rawPlayers.length, handSize, dealOrder)
+  const players = playersWithoutHands.map((p, i) => ({
     ...p,
     hand: sortHand(hands[i]),
     out: false,
@@ -98,19 +111,16 @@ function startNewGame(setup, dealerSeatOverride = null) {
   let deckLeft = remainingDeck.slice()
   let firstCard = deckLeft.shift()
   const bottomBuffer = []
-  while (firstCard && isPowerCard(firstCard) && deckLeft.length > 0) {
+  while (firstCard && isPowerCard(firstCard, players.length) && deckLeft.length > 0) {
     bottomBuffer.push(firstCard)
     firstCard = deckLeft.shift()
   }
   deckLeft = [...deckLeft, ...bottomBuffer]
 
-  const dealerSeat = Number.isInteger(dealerSeatOverride)
-    ? dealerSeatOverride
-    : players[Math.floor(Math.random() * players.length)].seatIndex
-
   return {
     phase: 'dealing',
     mode: setup.mode || 'local-demo',
+    gameMode: setup.gameMode || 'winner-takes-all',
     settings: { handSize },
     players,
     dealerSeat,
@@ -230,7 +240,7 @@ function reducer(state, action) {
       }
 
       const newHand = player.hand.filter((c) => !state.selectedCardIds.includes(c.id))
-      if (newHand.length === 0 && !canFinishOn(cards[cards.length - 1])) {
+      if (newHand.length === 0 && !canFinishOn(cards[cards.length - 1], state.players.filter((p) => !p.out).length)) {
         return { ...state, feedback: { error: "You can't finish your hand on a power card." } }
       }
 
@@ -324,7 +334,7 @@ function reducer(state, action) {
         p.seatIndex === state.currentSeat ? { ...player, hand: newHand } : p
       ))
       const discard = [...state.discard, ...cards]
-      const effect = computePlayEffect(cards)
+      const effect = computePlayEffect(cards, state.players.filter((p) => !p.out).length)
 
       let nextState = pushLog(
         { ...state, players, discard, requiredSuit: effect.power === 'ace' ? state.requiredSuit : null, recentPlayCards: cards },
@@ -489,6 +499,7 @@ function reducer(state, action) {
         })),
         handSize: state.settings.handSize,
         mode: state.mode,
+        gameMode: state.gameMode,
         localPlayerId: state.localPlayerId,
       }
       const nextDealer = nextOccupiedSeat(state.players, state.dealerSeat, DEFAULT_DIRECTION)
@@ -610,7 +621,7 @@ function RulesScreen({ onBack }) {
           <div><strong>Objective</strong><span>Be the first player to get rid of every card in your hand.</span></div>
           <div><strong>Starting hand</strong><span>7 cards; cards are removed as you play them.</span></div>
           <div><strong>Turn</strong><span>Dealer starts; play then moves left. Each turn has 30 seconds.</span></div>
-          <div><strong>Last Card</strong><span>At 1 card, declare within 3 seconds. Other players then have 3 seconds to challenge; a successful challenge adds 1 card.</span></div>
+          <div><strong>Last Card</strong><span>At 1 card, declare within 3 seconds. If missed, a 3-second challenge window opens; a successful challenge adds 1 card.</span></div>
           <div><strong>Runs</strong><span>Cards connect by same suit + adjacent rank, or same rank in different suits.</span></div>
           <div><strong>Draw pile</strong><span>If exhausted, the discard pile is turned over without shuffling, keeping the top card active.</span></div>
         </div>
@@ -624,7 +635,7 @@ function PowerCardsScreen({ onBack }) {
   const cards = [
     ['Ace', 'Wild — playable any time and chooses the next suit.'],
     ['2', '+2 pickup and stacks with other 2s and Black Jacks.'],
-    ['7', 'Reverses direction.'],
+    ['7', 'Reverses direction with 3+ players. In 1v1, the 7 has no power and may be the finishing card.'],
     ['8', 'Skips the next player and can be stacked/cancelled by another 8.'],
     ['Red Jack', 'Cancels an active pickup.'],
     ['Black Jack', '+5 pickup and stacks with 2s and other Black Jacks.'],
@@ -701,7 +712,7 @@ function TablePreview({ state, dispatch }) {
   const declarationSecondsLeft = state.lastCardDeadline ? Math.max(0, Math.ceil((state.lastCardDeadline - now) / 1000)) : null
   const challengeSecondsLeft = state.lastCardChallengeDeadline ? Math.max(0, Math.ceil((state.lastCardChallengeDeadline - now) / 1000)) : null
   const wholeHandRun = localPlayer && state.phase === 'card-play' && !state.transitionStartedAt
-    ? findWholeHandRun(localPlayer.hand, topCard, state.requiredSuit)
+    ? findWholeHandRun(localPlayer.hand, topCard, state.requiredSuit, state.players.filter((p) => !p.out).length)
     : null
   const transitionElapsed = state.transitionStartedAt ? Math.max(0, now - state.transitionStartedAt) : 0
   const transitionCardCount = state.recentPlayCards?.length
@@ -1015,10 +1026,10 @@ function TablePreview({ state, dispatch }) {
             {Array.from({ length: 36 }, (_, i) => <span key={i} style={{'--i': i}} />)}
           </div>
           <div className="winner-card">
-            <div className="winner-kicker">FAMILY CIRCLE</div>
+            <div className="winner-kicker">FAMILY CIRCLE · {state.gameMode === 'knockout' ? 'KNOCKOUT' : 'WINNER TAKES ALL'}</div>
             <div className="winner-title">WINNER!</div>
             <div className="winner-name">{state.players.find((p) => p.id === state.winner)?.name || 'Player'}</div>
-            <div className="winner-subtitle">WINNER WINNER CHICKEN DINNER! 🃏</div>
+            <div className="winner-subtitle">{state.gameMode === 'knockout' ? 'ROUND WINNER' : 'FIRST PLAYER TO CLEAR THEIR HAND'}</div>
             <div className="winner-actions">
               <button className="btn primary big" onClick={() => dispatch({ type: 'PLAY_AGAIN' })}>PLAY ANOTHER GAME</button>
               <button className="btn secondary" onClick={() => dispatch({ type: 'GO_HOME' })}>HOME</button>
@@ -1035,12 +1046,13 @@ function TablePreview({ state, dispatch }) {
 function SetupScreen({ onBack, onStart }) {
   const [count, setCount] = useState(4)
   const [names, setNames] = useState(['Player 1', 'Player 2', 'Player 3', 'Player 4', 'Player 5', 'Player 6', 'Player 7'])
+  const [gameMode, setGameMode] = useState('winner-takes-all')
   function handleStart() {
     const players = Array.from({ length: count }, (_, i) => ({
       id: `p${i}`,
       name: names[i] || `Player ${i + 1}`,
     }))
-    onStart({ players, handSize: 7, mode: 'local-demo', localPlayerId: players[0]?.id })
+    onStart({ players, handSize: 7, mode: 'local-demo', gameMode, localPlayerId: players[0]?.id })
   }
 
   return (
@@ -1088,8 +1100,22 @@ function SetupScreen({ onBack, onStart }) {
 
         <details className="settings-details" open>
           <summary>Game settings</summary>
-          <p className="hint">Each player starts with 7 cards. The dealer is marked at the table, cards are dealt left, and each turn has 30 seconds.</p>
+          <p className="hint">Each player starts with 7 cards. The dealer shuffles, deals first, and play moves left. Each turn has 30 seconds.</p>
         </details>
+
+        <div className="game-mode-section">
+          <div className="player-names-label">GAME MODE</div>
+          <div className="game-mode-options" role="group" aria-label="Game mode">
+            <button type="button" className={`game-mode-option ${gameMode === 'winner-takes-all' ? 'active' : ''}`} onClick={() => setGameMode('winner-takes-all')} aria-pressed={gameMode === 'winner-takes-all'}>
+              <strong>WINNER TAKES ALL</strong>
+              <span>First player to get rid of every card wins.</span>
+            </button>
+            <button type="button" className={`game-mode-option ${gameMode === 'knockout' ? 'active' : ''}`} onClick={() => setGameMode('knockout')} aria-pressed={gameMode === 'knockout'}>
+              <strong>KNOCKOUT</strong>
+              <span>Knockout format — detailed elimination rules will be added before knockout play is activated.</span>
+            </button>
+          </div>
+        </div>
 
         <button className="btn primary big" onClick={handleStart}>START GAME</button>
       </div>
