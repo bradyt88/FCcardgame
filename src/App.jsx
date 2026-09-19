@@ -50,8 +50,8 @@ const TURN_SECONDS = 30
 const DECLARATION_SECONDS = 3
 const CHALLENGE_SECONDS = 3
 const DEAL_ANIMATION_MS = 2800
-const TURN_TRANSITION_MS = 2200
-const PLAY_CARD_STEP_MS = 430
+const TURN_TRANSITION_MS = 1800
+const PLAY_CARD_STEP_MS = 250
 
 function sortHand(hand) {
   return hand.slice().sort((a, b) => {
@@ -465,7 +465,7 @@ function reducer(state, action) {
 
     case 'TURN_TRANSITION_COMPLETE': {
       if (!state.transitionStartedAt) return state
-      const transitionDuration = Math.max(TURN_TRANSITION_MS, (state.recentPlayCards?.length || 0) * PLAY_CARD_STEP_MS + 900)
+      const transitionDuration = Math.min(2000, Math.max(TURN_TRANSITION_MS, (state.recentPlayCards?.length || 0) * PLAY_CARD_STEP_MS + 700))
       if (Date.now() - state.transitionStartedAt < transitionDuration) return state
       return {
         ...state,
