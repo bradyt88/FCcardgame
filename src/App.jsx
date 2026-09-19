@@ -16,6 +16,7 @@ import {
   computePlayEffect,
 } from './game/engine.js'
 import { FAMILY_CIRCLE_LOGO } from './logo.js'
+import BackgroundMusic from './BackgroundMusic.jsx'
 import {
   DEFAULT_DIRECTION,
   assignDemoSeats,
@@ -661,7 +662,12 @@ function PowerCardsScreen({ onBack }) {
 }
 
 function GameBody({ state, dispatch }) {
-  return <TablePreview state={state} dispatch={dispatch} />
+  return (
+    <>
+      <TablePreview state={state} dispatch={dispatch} />
+      <BackgroundMusic enabled />
+    </>
+  )
 }
 
 function TablePreview({ state, dispatch }) {
