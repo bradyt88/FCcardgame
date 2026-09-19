@@ -1371,3 +1371,14 @@ button { -webkit-tap-highlight-color: transparent; }
   .ace-change-title { font-size: 16px; }
   .ace-change-suit-name { font-size: 24px; }
 }
+
+
+/* Game mode selection */
+.game-mode-section { margin-top: 18px; }
+.game-mode-options { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: 10px; }
+.game-mode-option { appearance: none; min-height: 78px; padding: 12px; text-align: left; border: 1px solid #ffffff20; border-radius: 12px; color: #dbe7ff; background: linear-gradient(145deg, #071329, #0b1730); cursor: pointer; transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease, background .16s ease; }
+.game-mode-option strong { display: block; color: #f8fbff; font-size: 10px; letter-spacing: .08em; }
+.game-mode-option span { display: block; margin-top: 6px; color: #9fb0c8; font-size: 9px; line-height: 1.35; }
+.game-mode-option:hover { transform: translateY(-1px); border-color: #16dfff66; }
+.game-mode-option.active { border-color: #16dfffaa; background: linear-gradient(145deg, #10294c, #20163e); box-shadow: 0 0 22px #16dfff18, inset 0 1px 0 #ffffff12; }
+@media (max-width: 560px) { .game-mode-options { grid-template-columns: 1fr; } }
