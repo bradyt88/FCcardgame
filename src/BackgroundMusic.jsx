@@ -9,7 +9,7 @@ const TRACKS = [
 
 export default function BackgroundMusic({ enabled = true }) {
   const audioRef = useRef(null)
-  const indexRef = useRef(0)
+  const indexRef = useRef(-1)
   const [muted, setMuted] = useState(false)
   const [blocked, setBlocked] = useState(true)
 
@@ -34,11 +34,11 @@ export default function BackgroundMusic({ enabled = true }) {
     }
 
     const handleEnded = () => {
-      playTrack((indexRef.current + 1) % TRACKS.length)
+      playTrack((indexRef.current + 1 + Math.floor(Math.random() * Math.max(1, TRACKS.length - 1))) % TRACKS.length)
     }
 
     audio.addEventListener('ended', handleEnded)
-    playTrack(indexRef.current)
+    playTrack(Math.floor(Math.random() * TRACKS.length))
 
     return () => {
       audio.removeEventListener('ended', handleEnded)
@@ -57,7 +57,7 @@ export default function BackgroundMusic({ enabled = true }) {
     if (!audio) return
     try {
       if (!audio.src) {
-        audio.src = TRACKS[indexRef.current]
+        audio.src = TRACKS[indexRef.current < 0 ? 0 : indexRef.current]
         audio.volume = 0.22
         audio.load()
       }
