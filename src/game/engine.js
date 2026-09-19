@@ -125,15 +125,15 @@ export function validateRunChain(cards) {
   return true
 }
 
-// Rule sheet 5 & "Finishing": a player may not finish by ending their
-// play on a power card, EXCEPT a 7 (explicitly carved out as able to
-// finish). A Black Jack exposed as the final card keeps its power and
-// so also cannot be a finishing card.
+// Finishing rule: in a 1v1 game, the 7 is a normal finishable card and
+// is NOT a reverse card. With 3–7 active players, a 7 is the reverse
+// power card and cannot be the finishing card. All other power cards
+// cannot finish the hand.
 export function canFinishOn(card, activePlayerCount = 3) {
+  // In 1v1, 7 is normal and therefore finishable.
+  // With 3–7 active players, 7 is reverse and cannot finish.
   const power = cardPower(card, activePlayerCount)
-  if (power === null) return true
-  if (card?.rank === '7' && activePlayerCount === 2) return true
-  return false
+  return power === null
 }
 
 // ASSUMPTION (documented in README): the sheets describe stacking for
