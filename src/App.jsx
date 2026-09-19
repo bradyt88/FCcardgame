@@ -166,7 +166,16 @@ function reducer(state, action) {
       return { phase: 'home' }
 
     case 'GO_TO_SETUP':
-      return { phase: 'setup' }
+      return { phase: 'lobby-home' }
+
+    case 'SHOW_LOBBY_CREATE':
+      return { phase: 'lobby-create' }
+
+    case 'SHOW_LOBBY_JOIN':
+      return { phase: 'lobby-join' }
+
+    case 'LOBBY_BACK':
+      return { phase: 'lobby-home' }
 
     case 'SHOW_RULES':
       return { phase: 'rules' }
@@ -593,6 +602,29 @@ export default function App() {
         onPowerCards={() => dispatch({ type: 'SHOW_POWER_CARDS' })}
       />
     )
+  }
+
+  if (state.phase === 'lobby-home') {
+    return <LobbyHomeScreen
+      onBack={() => dispatch({ type: 'GO_HOME' })}
+      onCreate={() => dispatch({ type: 'SHOW_LOBBY_CREATE' })}
+      onJoin={() => dispatch({ type: 'SHOW_LOBBY_JOIN' })}
+    />
+  }
+
+  if (state.phase === 'lobby-create') {
+    return <LobbyCreateScreen
+      onBack={() => dispatch({ type: 'SHOW_LOBBY_CREATE' })}
+      onHome={() => dispatch({ type: 'GO_HOME' })}
+      onStart={(payload) => dispatch({ type: 'START_GAME', payload })}
+    />
+  }
+
+  if (state.phase === 'lobby-join') {
+    return <LobbyJoinScreen
+      onBack={() => dispatch({ type: 'SHOW_LOBBY_JOIN' })}
+      onHome={() => dispatch({ type: 'GO_HOME' })}
+    />
   }
 
   if (state.phase === 'setup') {
@@ -1134,6 +1166,138 @@ function TablePreview({ state, dispatch }) {
         </div>
       )}
     </main>
+  )
+}
+
+// ---------- online lobby prototype ----------
+
+function LobbyShell({ title, subtitle, children, onBack, onHome }) {
+  return (
+    <main className="lobby-screen">
+      <div className="lobby-orbit lobby-orbit-a" aria-hidden="true" />
+      <div className="lobby-orbit lobby-orbit-b" aria-hidden="true" />
+      <section className="lobby-card">
+        <img className="lobby-logo" src={FAMILY_CIRCLE_LOGO} alt="Family Circle" />
+        <div className="lobby-kicker">FAMILY CIRCLE · ONLINE</div>
+        <h1>{title}</h1>
+        <p className="lobby-subtitle">{subtitle}</p>
+        {children}
+        <div className="lobby-footer-actions">
+          <button className="btn secondary" onClick={onBack}>← BACK</button>
+          <button className="text-link" onClick={onHome}>HOME</button>
+        </div>
+      </section>
+    </main>
+  )
+}
+
+function LobbyHomeScreen({ onBack, onCreate, onJoin }) {
+  return (
+    <LobbyShell title="ONLINE LOBBY" subtitle="Create a private game for your family, or join one with a game code." onBack={onBack} onHome={onBack}>
+      <div className="lobby-choice-grid">
+        <button className="lobby-choice create" onClick={onCreate}>
+          <span className="lobby-choice-icon">＋</span>
+          <strong>CREATE GAME</strong>
+          <small>You become the host and receive a private game code.</small>
+        </button>
+        <button className="lobby-choice join" onClick={onJoin}>
+          <span className="lobby-choice-icon">↗</span>
+          <strong>JOIN GAME</strong>
+          <small>Enter a 6-character code from the game host.</small>
+        </button>
+      </div>
+      <div className="lobby-note"><b>TEST MODE</b><span>The lobby UI is being tested locally first. Live cross-device rooms will connect to Supabase next.</span></div>
+    </LobbyShell>
+  )
+}
+
+function LobbyCreateScreen({ onBack, onHome, onStart }) {
+  const [name, setName] = useState('Player 1')
+  const [count, setCount] = useState(4)
+  const [players, setPlayers] = useState([{ id: 'host', name: 'Player 1', host: true, ready: true }])
+  const [code] = useState(() => Math.random().toString(36).slice(2, 8).toUpperCase())
+
+  const addTestPlayer = () => {
+    if (players.length >= count) return
+    const n = players.length + 1
+    setPlayers([...players, { id: 'test-' + n, name: 'Player ' + n, host: false, ready: true }])
+  }
+  const start = () => {
+    const gamePlayers = players.map((p, i) => ({ id: 'p' + i, name: p.name }))
+    onStart({ players: gamePlayers, handSize: 7, mode: 'local-demo', gameMode: 'winner-takes-all', localPlayerId: 'p0' })
+  }
+
+  return (
+    <LobbyShell title="CREATE GAME" subtitle="Set your name, choose the player limit, then share the code." onBack={onBack} onHome={onHome}>
+      <div className="lobby-code-card">
+        <span>GAME CODE</span>
+        <strong>{code}</strong>
+        <small>Share this code with the players you want to invite.</small>
+      </div>
+
+      <label className="lobby-field">
+        <span>YOUR NAME</span>
+        <input className="text-input" value={name} onChange={e => {
+          const value = e.target.value.slice(0, 18)
+          setName(value)
+          setPlayers(ps => ps.map((p, i) => i === 0 ? { ...p, name: value || 'Player 1' } : p))
+        }} />
+      </label>
+
+      <div className="lobby-field">
+        <span>MAX PLAYERS</span>
+        <div className="player-count-options">
+          {[2,3,4,5,6,7].map(n => <button key={n} className={`player-count-option ${count === n ? 'active' : ''}`} onClick={() => setCount(n)}>{n}</button>)}
+        </div>
+      </div>
+
+      <div className="lobby-players">
+        <div className="lobby-section-heading"><span>PLAYERS</span><b>{players.length}/{count}</b></div>
+        {players.map((p, i) => (
+          <div className="lobby-player-row" key={p.id}>
+            <div className="lobby-avatar">{i === 0 ? 'H' : i + 1}</div>
+            <div><strong>{p.name}</strong><small>{p.host ? 'HOST' : 'READY'}</small></div>
+            {p.host && <em>HOST</em>}
+          </div>
+        ))}
+        {Array.from({ length: Math.max(0, count - players.length) }, (_, i) => (
+          <div className="lobby-player-row open" key={'open' + i}><div className="lobby-avatar">+</div><div><strong>Waiting for player…</strong><small>OPEN SEAT</small></div></div>
+        ))}
+      </div>
+
+      <button className="btn secondary lobby-test-add" disabled={players.length >= count} onClick={addTestPlayer}>＋ ADD TEST PLAYER</button>
+      <button className="btn primary big lobby-start" disabled={players.length < 2} onClick={start}>START GAME · {players.length} PLAYERS</button>
+      <p className="lobby-test-caption">The “Add Test Player” button is temporary scaffolding for UI testing. Supabase will replace it with real players.</p>
+    </LobbyShell>
+  )
+}
+
+function LobbyJoinScreen({ onBack, onHome }) {
+  const [code, setCode] = useState('')
+  const [name, setName] = useState('Player')
+  const [joined, setJoined] = useState(false)
+
+  if (joined) {
+    return (
+      <LobbyShell title="WAITING ROOM" subtitle="You have joined the test room. The host controls when the game starts." onBack={() => setJoined(false)} onHome={onHome}>
+        <div className="lobby-code-card compact"><span>GAME CODE</span><strong>{code}</strong></div>
+        <div className="lobby-players">
+          <div className="lobby-section-heading"><span>ROOM</span><b>2/7</b></div>
+          <div className="lobby-player-row"><div className="lobby-avatar">H</div><div><strong>Host</strong><small>HOST · READY</small></div><em>HOST</em></div>
+          <div className="lobby-player-row"><div className="lobby-avatar">Y</div><div><strong>{name || 'Player'}</strong><small>YOU · READY</small></div><em>YOU</em></div>
+        </div>
+        <div className="lobby-note"><b>WAITING</b><span>When Supabase is connected, this list will update instantly as family members join or leave.</span></div>
+      </LobbyShell>
+    )
+  }
+
+  return (
+    <LobbyShell title="JOIN GAME" subtitle="Enter the host's game code and the name you want other players to see." onBack={onBack} onHome={onHome}>
+      <label className="lobby-field"><span>YOUR NAME</span><input className="text-input" value={name} onChange={e => setName(e.target.value.slice(0,18))} /></label>
+      <label className="lobby-field"><span>GAME CODE</span><input className="text-input lobby-code-input" value={code} maxLength={6} onChange={e => setCode(e.target.value.replace(/[^a-z0-9]/gi,'').toUpperCase())} placeholder="ABC123" /></label>
+      <button className="btn primary big" disabled={code.length !== 6 || !name.trim()} onClick={() => setJoined(true)}>JOIN GAME</button>
+      <p className="lobby-test-caption">Local test mode: entering any 6-character code opens the waiting-room preview. Real room validation comes with Supabase.</p>
+    </LobbyShell>
   )
 }
 
