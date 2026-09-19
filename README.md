@@ -58,7 +58,7 @@ The rules engine remains separate from presentation. The new table model is in `
 
 The UI also has a canonical `suggestedCardIds()` helper in the engine so the table can highlight legal suggestions without duplicating rules.
 
-One rule remains deliberately unaltered: the engine currently treats a 7 as finishable, while an earlier UI reference said it was not. That conflict has been removed from the UI text rather than silently changing the game rule. It should be locked against the authoritative Family Circle rule sheet before final gameplay release.
+The 7 finishing rule is locked: in a 1v1 game the 7 is normal and is the only reverse-related exception that can finish the hand; with 3–7 active players the 7 is a reverse power card and cannot finish the hand.
 
 ## Stage 1 — Brand & Home
 
