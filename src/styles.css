@@ -1020,10 +1020,10 @@ button { -webkit-tap-highlight-color: transparent; }
 }
 .confetti-piece {
   position: absolute;
-  left: calc(var(--confetti-x) * 1%);
-  top: calc(var(--confetti-y) * 1vh);
+  left: var(--confetti-x);
+  top: var(--confetti-y);
   width: var(--confetti-size);
-  height: calc(var(--confetti-size) * 1.85);
+  height: var(--confetti-height);
   border-radius: 2px;
   background: linear-gradient(180deg, #16dfff, #ff1ec8);
   box-shadow: 0 0 10px #16dfff55;
@@ -1074,7 +1074,7 @@ button { -webkit-tap-highlight-color: transparent; }
   }
   100% {
     opacity: 0;
-    transform: translate3d(calc(var(--confetti-drift) * -.35), 120vh, 0) rotate(820deg) scale(.82);
+    transform: translate3d(var(--confetti-drift-end), 120vh, 0) rotate(820deg) scale(.82);
   }
 }
 
