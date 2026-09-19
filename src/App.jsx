@@ -614,7 +614,7 @@ export default function App() {
 
   if (state.phase === 'lobby-create') {
     return <LobbyCreateScreen
-      onBack={() => dispatch({ type: 'SHOW_LOBBY_CREATE' })}
+      onBack={() => dispatch({ type: 'LOBBY_BACK' })}
       onHome={() => dispatch({ type: 'GO_HOME' })}
       onStart={(payload) => dispatch({ type: 'START_GAME', payload })}
     />
@@ -622,7 +622,7 @@ export default function App() {
 
   if (state.phase === 'lobby-join') {
     return <LobbyJoinScreen
-      onBack={() => dispatch({ type: 'SHOW_LOBBY_JOIN' })}
+      onBack={() => dispatch({ type: 'LOBBY_BACK' })}
       onHome={() => dispatch({ type: 'GO_HOME' })}
     />
   }
