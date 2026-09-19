@@ -936,9 +936,21 @@ button { -webkit-tap-highlight-color: transparent; }
   display: grid;
   place-items: center;
   padding: 24px;
-  background: #02050ddd;
+  background:
+    radial-gradient(circle at 50% 38%, #182b56aa 0%, #070c1cee 44%, #02040cf7 100%);
   backdrop-filter: blur(9px);
   overflow: hidden;
+}
+.winner-overlay::before {
+  content: '';
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(circle at 18% 24%, #ff1ec815, transparent 26%),
+    radial-gradient(circle at 82% 24%, #16dfff18, transparent 28%),
+    radial-gradient(circle at 50% 92%, #9b4dff12, transparent 30%);
+  animation: winnerAmbient 6s ease-in-out infinite alternate;
+  pointer-events: none;
 }
 .winner-card {
   position: relative;
@@ -948,15 +960,19 @@ button { -webkit-tap-highlight-color: transparent; }
   text-align: center;
   border: 1px solid #16dfff66;
   border-radius: 24px;
-  background: linear-gradient(160deg, #07152b, #151337 55%, #25112e);
+  background: linear-gradient(160deg, #07152bf2, #151337f2 55%, #25112ef2);
   box-shadow: 0 30px 90px #000d, 0 0 60px #16dfff18;
   animation: winnerPop .5s cubic-bezier(.2,.9,.2,1.15);
 }
-.winner-kicker {
-  color: #16dfff;
-  font-size: 9px;
-  font-weight: 900;
-  letter-spacing: .28em;
+.winner-card::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  z-index: -1;
+  border-radius: inherit;
+  box-shadow: 0 0 34px #16dfff22, 0 0 70px #ff1ec812;
+  animation: winnerCardGlow 1.8s ease-in-out infinite alternate;
+  pointer-events: none;
 }
 .winner-title {
   margin-top: 7px;
@@ -968,6 +984,13 @@ button { -webkit-tap-highlight-color: transparent; }
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  animation: winnerTitleGlow 1.7s ease-in-out .25s infinite alternate;
+}
+.winner-kicker {
+  color: #16dfff;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .28em;
 }
 .winner-name {
   margin-top: 12px;
@@ -993,26 +1016,66 @@ button { -webkit-tap-highlight-color: transparent; }
   inset: 0;
   z-index: 1;
   pointer-events: none;
+  overflow: hidden;
 }
-.confetti span {
+.confetti-piece {
   position: absolute;
-  left: calc((var(--i) * 29) % 100 * 1%);
-  top: -12%;
-  width: 7px;
-  height: 14px;
+  left: calc(var(--confetti-x) * 1%);
+  top: calc(var(--confetti-y) * 1vh);
+  width: var(--confetti-size);
+  height: calc(var(--confetti-size) * 1.85);
   border-radius: 2px;
   background: linear-gradient(180deg, #16dfff, #ff1ec8);
-  transform: rotate(calc(var(--i) * 47deg));
-  animation: confettiFall 2.4s linear infinite;
-  animation-delay: calc(var(--i) * -0.07s);
+  box-shadow: 0 0 10px #16dfff55;
+  opacity: 0;
+  transform: translate3d(0, 0, 0) rotate(0deg) scale(.7);
+  animation: confettiFall var(--confetti-duration) cubic-bezier(.18,.72,.24,1) var(--confetti-delay) both;
+}
+.confetti-piece:nth-child(3n) {
+  background: linear-gradient(180deg, #ffd85c, #ff5bd7);
+}
+.confetti-piece:nth-child(3n + 1) {
+  background: linear-gradient(180deg, #ffffff, #58e9ff);
+}
+.confetti-piece:nth-child(4n) {
+  border-radius: 50%;
+  height: var(--confetti-size);
+}
+.confetti-wide {
+  width: calc(var(--confetti-size) * 1.8);
+  height: calc(var(--confetti-size) * .8);
 }
 @keyframes winnerPop {
-  from { opacity: 0; transform: scale(.82) translateY(20px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
+  0% { opacity: 0; transform: scale(.82) translateY(20px); }
+  70% { opacity: 1; transform: scale(1.025) translateY(0); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes winnerAmbient {
+  from { transform: scale(.96) rotate(-2deg); opacity: .65; }
+  to { transform: scale(1.05) rotate(2deg); opacity: 1; }
+}
+@keyframes winnerCardGlow {
+  from { opacity: .45; transform: scale(.985); }
+  to { opacity: 1; transform: scale(1.015); }
+}
+@keyframes winnerTitleGlow {
+  from { filter: drop-shadow(0 0 4px #16dfff18); transform: scale(1); }
+  to { filter: drop-shadow(0 0 18px #ff5bd755); transform: scale(1.025); }
 }
 @keyframes confettiFall {
-  from { transform: translateY(-10vh) rotate(0deg); }
-  to { transform: translateY(120vh) rotate(720deg); }
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) translateX(0) rotate(0deg) scale(.7);
+  }
+  8% { opacity: 1; }
+  62% {
+    opacity: 1;
+    transform: translate3d(var(--confetti-drift), 55vh, 0) rotate(430deg) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(calc(var(--confetti-drift) * -.35), 120vh, 0) rotate(820deg) scale(.82);
+  }
 }
 
 @media (max-width: 720px) {
