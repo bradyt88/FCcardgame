@@ -147,6 +147,7 @@ function startNewGame(setup, dealerSeatOverride = null) {
     transitionPlayerName: null,
     transitionStartedAt: null,
     aceSuitChange: null,
+    pickupAnimation: null,
     dealStartedAt: Date.now(),
   }
 }
@@ -268,7 +269,7 @@ function reducer(state, action) {
         )
       }
 
-      const nextState = pushLog({ ...state, players, discard, pendingPickup, requiredSuit: null, recentPlayCards: cards }, logLine)
+      const nextState = pushLog({ ...state, players, discard, pendingPickup, requiredSuit: null, recentPlayCards: cards, pickupAnimation: pendingPickup > 0 ? { amount: pendingPickup, kind: 'pickup' } : null }, logLine)
       if (newHand.length === 1) {
         return {
           ...nextState,
@@ -289,7 +290,7 @@ function reducer(state, action) {
         p.seatIndex === state.currentSeat ? { ...player, hand: sortHand([...player.hand, ...drawn]) } : p
       ))
       const nextState = pushLog(
-        { ...state, players, deck, discard, pendingPickup: 0 },
+        { ...state, players, deck, discard, pendingPickup: 0, pickupAnimation: drawn.length >= 2 ? { amount: drawn.length, kind: 'pickup' } : null },
         `${player.name} picked up ${drawn.length} card(s).`
       )
       return endTurn(nextState, { reverseCount: 0 })
@@ -472,6 +473,7 @@ function reducer(state, action) {
         transitionPlayerName: null,
         transitionStartedAt: null,
         aceSuitChange: null,
+        pickupAnimation: null,
         turnDeadline: Date.now() + TURN_SECONDS * 1000,
       }
     }
@@ -815,7 +817,21 @@ function TablePreview({ state, dispatch }) {
           <div className="turn-transition-overlay" aria-live="polite">
             <div className="turn-transition-card"><img src={FAMILY_CIRCLE_LOGO} alt="" aria-hidden="true" /></div>
             <div className="turn-transition-brand">FAMILY CIRCLE</div>
-            {state.aceSuitChange ? (
+            {state.pickupAnimation ? (
+              <div className={`pickup-power-event pickup-power-${Math.min(state.pickupAnimation.amount, 18)}`} aria-live="polite">
+                <div className="pickup-power-burst">⚡</div>
+                <div className="pickup-power-title">PICK UP {state.pickupAnimation.amount}</div>
+                <div className="pickup-power-sub">{state.transitionPlayerName || 'Player'} PLAYED A POWER CARD</div>
+                <div className="pickup-power-cards">
+                  {(state.recentPlayCards || []).map((card) => (
+                    <div className={`pickup-power-card suit-${card.suit}`} key={card.id}>
+                      <b>{card.rank}</b><small>{SUIT_SYMBOL[card.suit]}</small>
+                    </div>
+                  ))}
+                </div>
+                <div className="pickup-power-note">{state.pickupAnimation.amount >= 12 ? 'MASSIVE PICKUP!' : state.pickupAnimation.amount >= 8 ? 'BIG PICKUP!' : state.pickupAnimation.amount >= 4 ? 'POWER STACK!' : 'POWER CARD!'}</div>
+              </div>
+            ) : state.aceSuitChange ? (
               <div className="ace-suit-change" aria-live="polite">
                 <div className="ace-change-card suit-ace">
                   <span className="ace-change-rank">A</span>
