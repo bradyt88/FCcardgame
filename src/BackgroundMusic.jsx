@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 
 const TRACKS = [
-  '/FCcardgame/audio/soft-marimba-groove.mp3',
-  '/FCcardgame/audio/soft-marimba-groove-1.mp3',
-  '/FCcardgame/audio/soft-marimba-groove-2.mp3',
-  '/FCcardgame/audio/soft-marimba-groove-3.mp3',
+  '/FCcardgame/audio/Soft Marimba Groove.mp3',
+  '/FCcardgame/audio/Soft Marimba Groove (1).mp3',
+  '/FCcardgame/audio/Soft Marimba Groove (2).mp3',
+  '/FCcardgame/audio/Soft Marimba Groove (3).mp3',
 ]
 
 export default function BackgroundMusic({ enabled = true }) {
