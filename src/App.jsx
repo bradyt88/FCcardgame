@@ -359,7 +359,7 @@ function reducer(state, action) {
       }
 
       if (effect.cancelPickup) nextState = { ...nextState, pendingPickup: 0 }
-      else if (effect.pickupAdd) nextState = { ...nextState, pendingPickup: nextState.pendingPickup + effect.pickupAdd }
+      else if (effect.pickupAdd) { const pickupAmount = nextState.pendingPickup + effect.pickupAdd; nextState = { ...nextState, pendingPickup: pickupAmount, pickupAnimation: { amount: pickupAmount, kind: 'pickup' } } }
 
       if (effect.needsSuitChoice) {
         return { ...nextState, phase: 'suit-pick', pendingEffect: effect }
