@@ -1045,7 +1045,30 @@ function TablePreview({ state, dispatch }) {
       {state.phase === 'round-over' && (
         <div className="winner-overlay" role="dialog" aria-modal="true">
           <div className="confetti" aria-hidden="true">
-            {Array.from({ length: 36 }, (_, i) => <span key={i} style={{'--i': i}} />)}
+            {Array.from({ length: 64 }, (_, i) => {
+              const x = (i * 47 + 13) % 100
+              const y = -12 - ((i * 19) % 42)
+              const delay = -((i % 18) * 0.16)
+              const duration = 4.6 + ((i * 7) % 18) / 10
+              const drift = ((i * 37) % 180) - 90
+              const rotate = ((i * 61) % 70) - 35
+              const size = 5 + (i % 4)
+              return (
+                <span
+                  key={i}
+                  className={i % 5 === 0 ? 'confetti-piece confetti-wide' : 'confetti-piece'}
+                  style={{
+                    '--confetti-x': x,
+                    '--confetti-y': y,
+                    '--confetti-delay': delay + 's',
+                    '--confetti-duration': duration + 's',
+                    '--confetti-drift': drift + 'px',
+                    '--confetti-rotate': rotate + 'deg',
+                    '--confetti-size': size + 'px',
+                  }}
+                />
+              )
+            })}
           </div>
           <div className="winner-card">
             <div className="winner-kicker">FAMILY CIRCLE · {state.gameMode === 'knockout' ? 'KNOCKOUT' : 'WINNER TAKES ALL'}</div>
