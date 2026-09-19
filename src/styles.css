@@ -1387,21 +1387,46 @@ button { -webkit-tap-highlight-color: transparent; }
 /* Background music control */
 .music-control {
   position: fixed;
-  right: 12px;
-  bottom: 12px;
+  right: 18px;
+  top: 18px;
   z-index: 140;
 }
+
 .music-control-button {
-  min-height: 34px;
-  padding: 7px 11px;
-  border: 1px solid #16dfff66;
+  min-height: 46px;
+  padding: 10px 18px;
+  border: 1px solid #16dfff88;
   border-radius: 999px;
-  background: #07152bdd;
-  color: #dffaff;
-  font-size: 8px;
+  background: linear-gradient(135deg, #0b1e3aee, #24163fee);
+  color: #f4fbff;
+  font-size: 11px;
   font-weight: 900;
-  letter-spacing: .12em;
-  box-shadow: 0 0 18px #16dfff18, 0 8px 18px #0008;
-  backdrop-filter: blur(8px);
+  letter-spacing: .14em;
+  box-shadow: 0 0 24px #16dfff25, 0 10px 22px #0009, inset 0 1px 0 #ffffff12;
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+  transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
 }
-.music-control-button:hover { border-color: #16dfffaa; }
+
+.music-control-button:hover {
+  transform: translateY(-1px) scale(1.03);
+  border-color: #16dfffcc;
+  box-shadow: 0 0 30px #16dfff38, 0 12px 26px #000a, inset 0 1px 0 #ffffff18;
+}
+
+.music-control-button:active {
+  transform: scale(.98);
+}
+
+@media (max-width: 720px) {
+  .music-control {
+    right: 10px;
+    top: 10px;
+  }
+
+  .music-control-button {
+    min-height: 42px;
+    padding: 9px 14px;
+    font-size: 10px;
+  }
+}
