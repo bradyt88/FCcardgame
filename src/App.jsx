@@ -365,19 +365,31 @@ function reducer(state, action) {
         return { ...nextState, phase: 'round-over', winner: player.id, turnDeadline: null }
       }
 
+      // Apply pickup/cancellation effects before the one-card Last Card
+      // declaration branch. Otherwise a 2 or Black Jack played as the card
+      // that leaves the player on one card could lose its pickup contribution
+      // because the declaration branch returned early.
+      if (effect.cancelPickup) nextState = { ...nextState, pendingPickup: 0 }
+      else if (effect.pickupAdd) {
+        const pickupAmount = nextState.pendingPickup + effect.pickupAdd
+        nextState = {
+          ...nextState,
+          pendingPickup: pickupAmount,
+          pickupAnimation: { amount: pickupAmount, kind: 'pickup' },
+        }
+      }
+
       if (newHand.length === 1) {
         return {
           ...nextState,
-          phase: 'last-card-declare',
+          phase: effect.needsSuitChoice ? 'suit-pick-last-card' : 'last-card-declare',
+          pendingEffect: effect.needsSuitChoice ? effect : nextState.pendingEffect,
           lastCardPlayerId: player.id,
-          lastCardDeadline: Date.now() + DECLARATION_SECONDS * 1000,
+          lastCardDeadline: effect.needsSuitChoice ? null : Date.now() + DECLARATION_SECONDS * 1000,
           lastCardChallengeDeadline: null,
           turnDeadline: null,
         }
       }
-
-      if (effect.cancelPickup) nextState = { ...nextState, pendingPickup: 0 }
-      else if (effect.pickupAdd) { const pickupAmount = nextState.pendingPickup + effect.pickupAdd; nextState = { ...nextState, pendingPickup: pickupAmount, pickupAnimation: { amount: pickupAmount, kind: 'pickup' } } }
 
       if (effect.needsSuitChoice) {
         return { ...nextState, phase: 'suit-pick', pendingEffect: effect }
