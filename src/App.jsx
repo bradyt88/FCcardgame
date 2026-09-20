@@ -844,7 +844,13 @@ function GameSfxController({ state }) {
       playSfx('cardDraw', 0.58)
     }
 
-    if (previous.phase === 'last-card-challenge' && state.phase !== 'last-card-challenge') {
+    const previousHandCount = (previous.players || []).reduce((sum, player) => sum + (player.hand?.length || 0), 0)
+    const currentHandCount = (state.players || []).reduce((sum, player) => sum + (player.hand?.length || 0), 0)
+    if (
+      previous.phase === 'last-card-challenge' &&
+      state.phase !== 'last-card-challenge' &&
+      currentHandCount > previousHandCount
+    ) {
       playSfx('challenge', 0.72)
     }
 
