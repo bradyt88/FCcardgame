@@ -807,6 +807,13 @@ function GameBody({ state, dispatch }) {
   return (
     <>
       <GameSfxController state={state} />
+      <div className="portrait-orientation-hint" aria-live="polite">
+        <div className="orientation-icon" aria-hidden="true">↻</div>
+        <div>
+          <strong>TURN YOUR PHONE SIDEWAYS</strong>
+          <span>Landscape gives you a clearer view of your cards and the table.</span>
+        </div>
+      </div>
       <TablePreview state={state} dispatch={dispatch} />
       <BackgroundMusic enabled />
     </>
@@ -912,6 +919,9 @@ function TablePreview({ state, dispatch }) {
   const canEndTurn = state.hasDrawnThisTurn && state.pendingPickup === 0 && state.pendingSkip === 0
   const canDraw = state.phase === 'card-play' && !state.hasDrawnThisTurn && state.pendingPickup === 0 && state.pendingSkip === 0
   const selectedCards = (localPlayer?.hand || []).filter((card) => selectedIds.has(card.id))
+  const handCount = localPlayer?.hand?.length || 0
+  const handDensityClass = handCount >= 18 ? 'hand-very-crowded' : handCount >= 11 ? 'hand-crowded' : ''
+  const isYourTurn = Boolean(localPlayer && viewPlayer && localPlayer.id === viewPlayer.id && state.phase !== 'dealing' && state.phase !== 'round-over')
   const [now, setNow] = useState(Date.now())
 
   useEffect(() => {
@@ -961,7 +971,7 @@ function TablePreview({ state, dispatch }) {
   })
 
   return (
-    <main className="table-preview-screen">
+    <main className={`table-preview-screen ${isYourTurn ? 'is-your-turn' : 'is-opponent-turn'}`}>
       <header className="table-preview-header">
         <div className="table-brand">
           <img src={FAMILY_CIRCLE_LOGO} alt="Family Circle" />
@@ -970,7 +980,9 @@ function TablePreview({ state, dispatch }) {
             <div className="table-brand-sub">THE CARD GAME</div>
           </div>
         </div>
-        <div className="table-view-badge">ONLINE VIEW · 7 SEAT TABLE</div>
+        <div className={`table-view-badge ${isYourTurn ? 'your-turn-badge' : ''}`}>
+          {isYourTurn ? 'YOUR TURN' : `${viewPlayer?.name || 'PLAYER'} · TURN`}
+        </div>
       </header>
 
       <section className="table-layout">
@@ -1007,7 +1019,7 @@ function TablePreview({ state, dispatch }) {
                 const isDealer = Boolean(player && player.seatIndex === state.dealerSeat)
                 return (
                   <div
-                    className={`table-seat table-seat-${viewSeat} ${isYou ? 'you' : ''} ${occupied ? 'occupied' : 'empty'}`}
+                    className={`table-seat table-seat-${viewSeat} ${isYou ? 'you' : ''} ${occupied ? 'occupied' : 'empty'} ${occupied && player.id === viewPlayer?.id ? 'current-turn' : ''}`}
                     key={viewSeat}
                   >
                     <div className="seat-disc">
@@ -1098,10 +1110,10 @@ function TablePreview({ state, dispatch }) {
         )}
 
         <div className="table-hand">
-          <div className="turn-banner">
-            <div>
-              <span className="turn-kicker">{state.mode === 'online' ? 'YOUR TURN' : 'DEMO TURN'}</span>
-              <strong>{localPlayer?.name || 'Player'}</strong>
+          <div className={`turn-banner ${isYourTurn ? 'turn-banner-active' : 'turn-banner-waiting'}`} aria-live="polite">
+            <div className="turn-banner-player">
+              <span className="turn-kicker">{isYourTurn ? 'YOUR TURN' : 'WAITING FOR TURN'}</span>
+              <strong>{isYourTurn ? (localPlayer?.name || 'Player') : (viewPlayer?.name || 'Player')}</strong>
             </div>
             <span className="turn-status">
               {state.phase === 'card-play' && state.turnDeadline ? (
@@ -1149,20 +1161,37 @@ function TablePreview({ state, dispatch }) {
             <div className="game-feedback error">{state.feedback.error}</div>
           )}
 
-          <div className="hand-heading">
-            <span>YOUR HAND</span>
-            <strong>{localPlayer?.hand.length ?? 0} CARDS</strong>
+          <div className="game-state-rail" aria-live="polite">
+            <span className={`game-state-chip ${isYourTurn ? 'active' : ''}`}>
+              <i aria-hidden="true" />
+              {isYourTurn ? 'YOUR TURN' : 'WAITING'}
+            </span>
+            {state.pendingPickup > 0 && (
+              <span className="game-state-chip pickup">PICK UP {state.pendingPickup}</span>
+            )}
+            {state.pendingSkip > 0 && (
+              <span className="game-state-chip skip">SKIP ACTIVE</span>
+            )}
+            {state.requiredSuit && (
+              <span className="game-state-chip suit-state">SUIT · {state.requiredSuit.toUpperCase()}</span>
+            )}
+          </div>
+
+          <div className={`hand-heading ${isYourTurn ? 'hand-heading-active' : ''}`}>
+            <span>{isYourTurn ? 'YOUR HAND' : 'HAND'}</span>
+            <strong>{handCount} CARDS</strong>
             {suggestedIds.size > 0 && <em>{suggestedIds.size} SUGGESTED</em>}
           </div>
 
-          <div className="hand-cards">
-            {(localPlayer?.hand || []).map((card) => {
+          <div className={`hand-cards ${handDensityClass} ${isYourTurn ? 'hand-active' : 'hand-waiting'}`}>
+            {(localPlayer?.hand || []).map((card, index) => {
               const suggested = suggestedIds.has(card.id)
               const selected = selectedIds.has(card.id)
               return (
                 <button
                   className={`playing-card face-card suit-${card.suit} ${suggested ? 'suggested' : ''} ${selected ? 'selected' : ''}`}
                   key={card.id}
+                  style={{ '--card-index': index }}
                   onClick={() => dispatch({ type: 'TOGGLE_CARD', payload: card.id })}
                   aria-label={`${card.rank} of ${card.suit}`}
                 >
