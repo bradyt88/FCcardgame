@@ -582,12 +582,14 @@ function advanceToNextTurn(state, effect = {}) {
       detail: (nextPlayer?.name || 'PLAYER') + "'S TURN IS SKIPPED",
     }
   } else if (effect.pickupAdd) {
-    const pickupAmount = (state.pendingPickup || 0) + effect.pickupAdd
+    // When stacking, announce the move rather than the cumulative penalty.
+    // The player has only just added this card's pickup power; showing the
+    // running total here can make a single 2 look like it caused a pickup 4.
     gameEvent = {
       kind: 'pickup',
-      title: 'PICK UP ' + pickupAmount,
+      title: 'PICKUP STACKED',
       main: (finishingPlayer?.name || 'Player') + ' PLAYS ' + (playedCard?.rank || 'POWER CARD'),
-      detail: 'NEXT: ' + (nextPlayer?.name || 'PLAYER'),
+      detail: 'NEXT PLAYER MUST PICK UP',
     }
   } else if (effect.cancelPickup) {
     gameEvent = {
