@@ -14,6 +14,7 @@ import {
   isPowerCard,
   suggestedCardIds,
   computePlayEffect,
+  pickupValueForCards,
 } from './game/engine.js'
 import { FAMILY_CIRCLE_LOGO } from './logo.js'
 import BackgroundMusic from './BackgroundMusic.jsx'
@@ -268,7 +269,10 @@ function reducer(state, action) {
         pendingPickup = 0
         logLine = `${player.name} played a Red Jack — pickup cancelled.`
       } else {
-        const add = cards.reduce((sum, c) => sum + (isBlackJack(c) ? 5 : 2), 0)
+        // Every counter contributes its own pickup value:
+        // 2 = +2, Black Jack = +5. The existing pickup penalty is retained
+        // and the whole response is added to it in one step.
+        const add = pickupValueForCards(cards)
         pendingPickup += add
         logLine = `${player.name} stacked the pickup to ${pendingPickup}.`
       }
