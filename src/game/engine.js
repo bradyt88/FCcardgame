@@ -198,6 +198,19 @@ export function canCounterPickup(card) {
   return card.rank === '2' || isBlackJack(card)
 }
 
+// Pickup stacking is additive: every 2 contributes +2 and every Black Jack
+// contributes +5. This helper is shared so the calculation cannot diverge
+// between an initial pickup play and a later stacking response.
+export function pickupValue(card) {
+  if (card?.rank === '2') return 2
+  if (isBlackJack(card)) return 5
+  return 0
+}
+
+export function pickupValueForCards(cards) {
+  return cards.reduce((total, card) => total + pickupValue(card), 0)
+}
+
 export function dealHands(deck, numPlayers, handSize, dealOrder = null) {
   const hands = Array.from({ length: numPlayers }, () => [])
   const order = Array.isArray(dealOrder) ? dealOrder.slice() : Array.from({ length: numPlayers }, (_, index) => index)
